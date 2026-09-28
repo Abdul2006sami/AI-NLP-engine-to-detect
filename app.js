@@ -1,0 +1,2067 @@
+/* ============================================================
+   SIF Safety Intelligence System
+   Frontend Application - React CDN Edition
+   Smart India Hackathon 2026 | Problem ID: SIH26165
+   ============================================================ */
+
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// ═══════════════════════════════════════════════════════════════
+//  SAMPLE DATA
+// ═══════════════════════════════════════════════════════════════
+const SAMPLE_REPORTS = [
+  {
+    id: "OIL-0248", date: "2026-09-25", time: "09:15", type: "Near Miss",
+    location: "Drilling Platform B-7", department: "Drilling Operations",
+    equipment: "Elevated Work Platform", reporter: "Ramesh Kumar",
+    description: "Worker entered the restricted maintenance area without helmet and safety harness while maintenance activity was in progress on the elevated platform. Moving equipment was operational nearby.",
+    immediateAction: "Work stopped immediately. PPE issued. Area restricted.",
+    potentialConsequence: "Fall from height, crush injury, fatality",
+    existingControls: "Safety signage, PPE available at entry point",
+    sifDetected: true, riskLevel: "HIGH", confidence: 0.92,
+    status: "Pending", reviewStatus: "Pending Review",
+    indicators: ["Working at Height", "PPE Failure", "Unsafe Access", "Vehicle/Equipment Interaction"],
+    recommendations: ["Ensure mandatory PPE compliance", "Restrict unauthorized access", "Verify safety harness availability", "Conduct toolbox briefing"],
+    aiAnalysis: { severity: "High", exposure: "High", likelihood: "Medium", controlEffectiveness: "Low", score: 8.7 },
+    highlights: ["restricted maintenance area", "without helmet", "without safety harness", "maintenance activity", "Moving equipment"],
+    reviewHistory: [
+      { action: "Report submitted", by: "Ramesh Kumar", time: "2026-09-25 09:20" },
+      { action: "AI Analysis completed", by: "SIF Engine v2.1", time: "2026-09-25 09:21" },
+      { action: "Assigned for review", by: "System", time: "2026-09-25 09:22" }
+    ]
+  },
+  {
+    id: "OIL-0247", date: "2026-09-24", time: "14:30", type: "Unsafe Act",
+    location: "Refinery Unit-3", department: "Process Operations",
+    equipment: "Valve Assembly", reporter: "Priya Sharma",
+    description: "Operator bypassed energy isolation procedure (LOTO) while performing valve maintenance. Pressurized line was live during work activity.",
+    immediateAction: "Work halted. LOTO applied. Safety officer notified.",
+    potentialConsequence: "Explosion, severe burn injury, fatality",
+    existingControls: "LOTO procedure documented, safety permit system",
+    sifDetected: true, riskLevel: "HIGH", confidence: 0.91,
+    status: "Reviewed", reviewStatus: "Under Review",
+    indicators: ["Hazardous Energy", "Energy Isolation Failure", "Unsafe Act"],
+    recommendations: ["Reinforce LOTO compliance training", "Supervisor sign-off before maintenance", "Random compliance audits"],
+    aiAnalysis: { severity: "Critical", exposure: "High", likelihood: "High", controlEffectiveness: "Low", score: 9.1 },
+    highlights: ["bypassed energy isolation", "LOTO", "Pressurized line", "live during work"],
+    reviewHistory: [
+      { action: "Report submitted", by: "Priya Sharma", time: "2026-09-24 14:35" },
+      { action: "AI Analysis completed", by: "SIF Engine v2.1", time: "2026-09-24 14:36" },
+      { action: "Escalated to HSE Manager", by: "System", time: "2026-09-24 14:40" }
+    ]
+  },
+  {
+    id: "OIL-0241", date: "2026-09-22", time: "11:05", type: "Unsafe Condition",
+    location: "Pipeline Station K-12", department: "Pipeline Operations",
+    equipment: "Crane & Rigging", reporter: "Suresh Patel",
+    description: "Overhead crane load path was positioned over workers during a lifting operation. Rigging was improperly slung with incorrect load ratings.",
+    immediateAction: "Lifting stopped. Area cleared. Rigging inspected.",
+    potentialConsequence: "Struck-by, crush injury, fatality from dropped load",
+    existingControls: "Lift plan available, rigger certification required",
+    sifDetected: true, riskLevel: "HIGH", confidence: 0.88,
+    status: "Pending", reviewStatus: "Pending Review",
+    indicators: ["Line of Fire", "Lifting Operations", "Equipment Failure"],
+    recommendations: ["Enforce exclusion zone during lifting", "Verify rigging load ratings", "Mandatory lift plan review"],
+    aiAnalysis: { severity: "High", exposure: "Medium", likelihood: "High", controlEffectiveness: "Medium", score: 8.2 },
+    highlights: ["overhead crane", "load path", "over workers", "improperly slung", "incorrect load ratings"],
+    reviewHistory: [
+      { action: "Report submitted", by: "Suresh Patel", time: "2026-09-22 11:10" },
+      { action: "AI Analysis completed", by: "SIF Engine v2.1", time: "2026-09-22 11:11" }
+    ]
+  },
+  {
+    id: "OIL-0239", date: "2026-09-21", time: "16:45", type: "Near Miss",
+    location: "Tank Farm T-5", department: "Storage Operations",
+    equipment: "Storage Tank", reporter: "Anjali Singh",
+    description: "Worker entered confined space (storage tank) without gas testing or standby attendant. Hydrogen sulfide (H2S) levels were found to be elevated when later tested.",
+    immediateAction: "Worker rescued. Medical check done. Area isolated.",
+    potentialConsequence: "H2S poisoning, asphyxiation, fatality",
+    existingControls: "Confined space entry permit, gas detection equipment available",
+    sifDetected: true, riskLevel: "HIGH", confidence: 0.95,
+    status: "Closed", reviewStatus: "Reviewed",
+    indicators: ["Confined Space", "Chemical Exposure", "Unsafe Access"],
+    recommendations: ["Mandatory gas test before confined space entry", "Standby attendant required", "Periodic H2S training"],
+    aiAnalysis: { severity: "Critical", exposure: "High", likelihood: "High", controlEffectiveness: "Low", score: 9.4 },
+    highlights: ["confined space", "without gas testing", "standby attendant", "Hydrogen sulfide", "elevated"],
+    reviewHistory: [
+      { action: "Report submitted", by: "Anjali Singh", time: "2026-09-21 16:50" },
+      { action: "AI Analysis completed", by: "SIF Engine v2.1", time: "2026-09-21 16:51" },
+      { action: "Marked Reviewed", by: "HSE Manager", time: "2026-09-22 09:00" }
+    ]
+  },
+  {
+    id: "OIL-0235", date: "2026-09-19", time: "08:30", type: "Unsafe Condition",
+    location: "Wellsite Area W-22", department: "Drilling Operations",
+    equipment: "Drilling Rig", reporter: "Mohan Reddy",
+    description: "Electrical panel in the mud logging unit had exposed live wiring due to a missing cover plate. Workers were observed working in close proximity to the panel.",
+    immediateAction: "Panel isolated. Cover plate installed. Area barricaded.",
+    potentialConsequence: "Electrocution, electrical burn, fatality",
+    existingControls: "Electrical safety inspection schedule",
+    sifDetected: true, riskLevel: "MEDIUM", confidence: 0.82,
+    status: "Reviewed", reviewStatus: "Reviewed",
+    indicators: ["Electrical Hazard", "Equipment Failure", "Unsafe Access"],
+    recommendations: ["Immediate electrical audit of all panels", "Regular inspection schedule", "Safety cover installation program"],
+    aiAnalysis: { severity: "High", exposure: "Medium", likelihood: "Medium", controlEffectiveness: "Medium", score: 6.8 },
+    highlights: ["exposed live wiring", "missing cover plate", "close proximity", "electrical panel"],
+    reviewHistory: [
+      { action: "Report submitted", by: "Mohan Reddy", time: "2026-09-19 08:35" },
+      { action: "AI Analysis completed", by: "SIF Engine v2.1", time: "2026-09-19 08:36" },
+      { action: "Corrective action assigned", by: "Site Engineer", time: "2026-09-19 10:00" }
+    ]
+  },
+  {
+    id: "OIL-0231", date: "2026-09-17", time: "13:20", type: "Unsafe Act",
+    location: "Logistics Yard", department: "Logistics",
+    equipment: "Forklift", reporter: "Deepak Joshi",
+    description: "Forklift operator was operating vehicle at high speed in a pedestrian zone without proper warning signals. Three workers narrowly avoided being struck.",
+    immediateAction: "Forklift stopped. Driver counselled. Speed limit signs installed.",
+    potentialConsequence: "Vehicle-pedestrian collision, crush injury, fatality",
+    existingControls: "Speed limit signs, pedestrian lanes marked",
+    sifDetected: true, riskLevel: "HIGH", confidence: 0.87,
+    status: "Closed", reviewStatus: "Reviewed",
+    indicators: ["Vehicle Interaction", "Line of Fire", "Unsafe Act"],
+    recommendations: ["Speed governors on forklifts", "Mandatory pedestrian safety briefing", "Camera monitoring at pedestrian zones"],
+    aiAnalysis: { severity: "High", exposure: "High", likelihood: "Medium", controlEffectiveness: "Medium", score: 7.9 },
+    highlights: ["high speed", "pedestrian zone", "without warning signals", "narrowly avoided"],
+    reviewHistory: [
+      { action: "Report submitted", by: "Deepak Joshi", time: "2026-09-17 13:25" },
+      { action: "AI Analysis completed", by: "SIF Engine v2.1", time: "2026-09-17 13:26" }
+    ]
+  },
+  {
+    id: "OIL-0228", date: "2026-09-15", time: "10:10", type: "Near Miss",
+    location: "Gas Compression Station", department: "Gas Operations",
+    equipment: "Compressor Unit", reporter: "Kavita Nair",
+    description: "Gas leak detected from compression unit connector joint. Potential ignition sources were present in the area from nearby welding activity.",
+    immediateAction: "Welding stopped. Leak isolated. Area ventilated.",
+    potentialConsequence: "Fire, explosion, multiple fatalities",
+    existingControls: "Gas detection alarms, hot work permit system",
+    sifDetected: true, riskLevel: "HIGH", confidence: 0.93,
+    status: "Pending", reviewStatus: "Pending Review",
+    indicators: ["Fire/Explosion", "Hazardous Energy", "Chemical Exposure"],
+    recommendations: ["Hot work permit verification", "Gas leak detection upgrade", "Exclusion zone enforcement during welding"],
+    aiAnalysis: { severity: "Critical", exposure: "High", likelihood: "High", controlEffectiveness: "Medium", score: 9.0 },
+    highlights: ["Gas leak", "ignition sources", "welding activity", "compression unit"],
+    reviewHistory: [
+      { action: "Report submitted", by: "Kavita Nair", time: "2026-09-15 10:15" },
+      { action: "AI Analysis completed", by: "SIF Engine v2.1", time: "2026-09-15 10:16" }
+    ]
+  },
+  {
+    id: "OIL-0222", date: "2026-09-12", time: "15:00", type: "Unsafe Condition",
+    location: "Offshore Platform A-3", department: "Offshore Operations",
+    equipment: "Scaffolding", reporter: "Vijay Kumar",
+    description: "Scaffolding inspection tag was expired by 3 months. Workers were using the scaffold for painting operations without verification of current certification.",
+    immediateAction: "Scaffolding use suspended. Re-inspection ordered.",
+    potentialConsequence: "Structural collapse, fall from height, serious injury",
+    existingControls: "Scaffold inspection program, tag-out system",
+    sifDetected: true, riskLevel: "MEDIUM", confidence: 0.79,
+    status: "Reviewed", reviewStatus: "Reviewed",
+    indicators: ["Working at Height", "Equipment Failure", "PPE Failure"],
+    recommendations: ["Mandatory scaffold tag verification before use", "Monthly scaffold inspection program", "Digital scaffold certification tracking"],
+    aiAnalysis: { severity: "Medium", exposure: "High", likelihood: "Medium", controlEffectiveness: "Medium", score: 6.2 },
+    highlights: ["expired by 3 months", "without verification", "certification", "scaffold"],
+    reviewHistory: [
+      { action: "Report submitted", by: "Vijay Kumar", time: "2026-09-12 15:05" },
+      { action: "AI Analysis completed", by: "SIF Engine v2.1", time: "2026-09-12 15:06" }
+    ]
+  },
+  {
+    id: "OIL-0218", date: "2026-09-10", time: "07:45", type: "Unsafe Act",
+    location: "Chemical Storage Block C", department: "HSE",
+    equipment: "Chemical Storage", reporter: "Sanjay Verma",
+    description: "Worker handling corrosive chemical (HCl) without acid-resistant gloves and face shield. No spill kit available in the immediate vicinity.",
+    immediateAction: "Work stopped. PPE provided. First aid check performed.",
+    potentialConsequence: "Chemical burn, eye injury, severe injury",
+    existingControls: "PPE requirement documented, SDS available",
+    sifDetected: false, riskLevel: "MEDIUM", confidence: 0.74,
+    status: "Closed", reviewStatus: "Reviewed",
+    indicators: ["Chemical Exposure", "PPE Failure"],
+    recommendations: ["Chemical handling PPE enforcement", "Spill kit installation at chemical storage", "Mandatory chemical handling training"],
+    aiAnalysis: { severity: "Medium", exposure: "Medium", likelihood: "Medium", controlEffectiveness: "Medium", score: 5.8 },
+    highlights: ["corrosive chemical", "without acid-resistant gloves", "face shield", "No spill kit"],
+    reviewHistory: [
+      { action: "Report submitted", by: "Sanjay Verma", time: "2026-09-10 07:50" },
+      { action: "AI Analysis completed", by: "SIF Engine v2.1", time: "2026-09-10 07:51" }
+    ]
+  },
+  {
+    id: "OIL-0214", date: "2026-09-08", time: "11:30", type: "Near Miss",
+    location: "Pump House PH-2", department: "Maintenance",
+    equipment: "High Pressure Pump", reporter: "Arjun Menon",
+    description: "High pressure hose fitting showed signs of severe wear and near-failure condition. Hydraulic oil spray incident was narrowly avoided during startup.",
+    immediateAction: "Pump shutdown. Hose fitting replaced. Inspection done.",
+    potentialConsequence: "High pressure injection injury, slip hazard, fire",
+    existingControls: "Maintenance schedule, pre-operation inspection checklist",
+    sifDetected: false, riskLevel: "MEDIUM", confidence: 0.71,
+    status: "Closed", reviewStatus: "Reviewed",
+    indicators: ["Equipment Failure", "Hazardous Energy"],
+    recommendations: ["Hose inspection before each startup", "Replace worn fittings proactively", "Pressure relief valve verification"],
+    aiAnalysis: { severity: "Medium", exposure: "Medium", likelihood: "Low", controlEffectiveness: "High", score: 4.9 },
+    highlights: ["severe wear", "near-failure", "Hydraulic oil spray", "narrowly avoided"],
+    reviewHistory: [
+      { action: "Report submitted", by: "Arjun Menon", time: "2026-09-08 11:35" },
+      { action: "AI Analysis completed", by: "SIF Engine v2.1", time: "2026-09-08 11:36" }
+    ]
+  },
+  {
+    id: "OIL-0209", date: "2026-09-05", time: "14:15", type: "Unsafe Condition",
+    location: "Admin Block A1", department: "Administration",
+    equipment: "Staircase", reporter: "Neha Gupta",
+    description: "Staircase handrail on 3rd floor was found loose and unstable. Multiple employees using the staircase daily. Condition reported to maintenance but not yet fixed.",
+    immediateAction: "Caution tape placed. Alternative route marked.",
+    potentialConsequence: "Fall injury, fracture",
+    existingControls: "Maintenance request system",
+    sifDetected: false, riskLevel: "LOW", confidence: 0.61,
+    status: "Pending", reviewStatus: "Pending Review",
+    indicators: ["Unsafe Access"],
+    recommendations: ["Immediate repair of handrail", "Maintenance escalation procedure review", "Weekly facilities inspection"],
+    aiAnalysis: { severity: "Low", exposure: "High", likelihood: "Low", controlEffectiveness: "High", score: 3.2 },
+    highlights: ["loose and unstable", "not yet fixed", "handrail"],
+    reviewHistory: [
+      { action: "Report submitted", by: "Neha Gupta", time: "2026-09-05 14:20" },
+      { action: "AI Analysis completed", by: "SIF Engine v2.1", time: "2026-09-05 14:21" }
+    ]
+  }
+];
+
+const SIF_CATEGORIES = [
+  { name: "Working at Height", icon: "fa-person-falling", color: "#ff6d00", reports: 42, high: 18, sif: 14, trend: "+3", iconBg: "rgba(255,109,0,0.15)" },
+  { name: "Hazardous Energy", icon: "fa-bolt", color: "#ff1744", reports: 35, high: 21, sif: 19, trend: "+5", iconBg: "rgba(255,23,68,0.15)" },
+  { name: "Confined Space", icon: "fa-circle-dot", color: "#aa00ff", reports: 28, high: 15, sif: 13, trend: "+2", iconBg: "rgba(170,0,255,0.15)" },
+  { name: "Vehicle Interaction", icon: "fa-truck-fast", color: "#ff6d00", reports: 31, high: 12, sif: 9, trend: "-1", iconBg: "rgba(255,109,0,0.15)" },
+  { name: "Fire / Explosion", icon: "fa-fire", color: "#ff1744", reports: 19, high: 14, sif: 16, trend: "+4", iconBg: "rgba(255,23,68,0.15)" },
+  { name: "Lifting Operations", icon: "fa-up-down", color: "#ff8f00", reports: 24, high: 8, sif: 6, trend: "0", iconBg: "rgba(255,143,0,0.15)" },
+  { name: "Chemical Exposure", icon: "fa-flask", color: "#aa00ff", reports: 16, high: 7, sif: 5, trend: "-2", iconBg: "rgba(170,0,255,0.15)" },
+  { name: "Electrical Hazard", icon: "fa-plug-circle-exclamation", color: "#ffab00", reports: 22, high: 9, sif: 7, trend: "+1", iconBg: "rgba(255,171,0,0.15)" },
+  { name: "PPE Failure", icon: "fa-helmet-safety", color: "#ffab00", reports: 38, high: 11, sif: 8, trend: "+2", iconBg: "rgba(255,171,0,0.15)" },
+  { name: "Line of Fire", icon: "fa-crosshairs", color: "#ff1744", reports: 27, high: 16, sif: 14, trend: "+3", iconBg: "rgba(255,23,68,0.15)" },
+  { name: "Unsafe Access", icon: "fa-door-open", color: "#1e90ff", reports: 45, high: 14, sif: 10, trend: "+6", iconBg: "rgba(30,144,255,0.15)" },
+  { name: "Equipment Failure", icon: "fa-gear", color: "#78909c", reports: 33, high: 10, sif: 8, trend: "-1", iconBg: "rgba(120,144,156,0.15)" }
+];
+
+const RECOMMENDATIONS_DATA = [
+  { id: 1, text: "Implement mandatory PPE compliance check at all entry points", report: "OIL-0248", priority: "high", assignedTo: "Site Safety Officer", dueDate: "2026-10-05", status: "pending", category: "PPE" },
+  { id: 2, text: "Review and enforce LOTO procedures across all maintenance teams", report: "OIL-0247", priority: "critical", assignedTo: "HSE Manager", dueDate: "2026-10-01", status: "pending", category: "Energy Isolation" },
+  { id: 3, text: "Conduct confined space entry training for all field workers", report: "OIL-0239", priority: "high", assignedTo: "Training Department", dueDate: "2026-10-10", status: "in-progress", category: "Confined Space" },
+  { id: 4, text: "Install speed governors on all forklifts in logistics yard", report: "OIL-0231", priority: "medium", assignedTo: "Maintenance Lead", dueDate: "2026-10-15", status: "completed", category: "Vehicle Safety" },
+  { id: 5, text: "Hot work permit system reinforcement and supervisor verification", report: "OIL-0228", priority: "critical", assignedTo: "Operations Manager", dueDate: "2026-09-30", status: "overdue", category: "Fire Prevention" },
+  { id: 6, text: "Monthly scaffold inspection and digital certification tracking", report: "OIL-0222", priority: "medium", assignedTo: "Site Engineer", dueDate: "2026-10-20", status: "in-progress", category: "Working at Height" },
+  { id: 7, text: "Spill kit installation at all chemical storage areas", report: "OIL-0218", priority: "medium", assignedTo: "Facilities Manager", dueDate: "2026-10-08", status: "pending", category: "Chemical Safety" },
+  { id: 8, text: "Electrical panel inspection and cover plate installation program", report: "OIL-0235", priority: "high", assignedTo: "Electrical Engineer", dueDate: "2026-10-03", status: "completed", category: "Electrical Safety" }
+];
+
+const MONTHLY_TREND = [
+  { month: "Mar", total: 18, sif: 3 },
+  { month: "Apr", total: 21, sif: 5 },
+  { month: "May", total: 26, sif: 4 },
+  { month: "Jun", total: 24, sif: 6 },
+  { month: "Jul", total: 29, sif: 7 },
+  { month: "Aug", total: 31, sif: 5 },
+  { month: "Sep", total: 34, sif: 7 }
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  API SERVICE (Backend-Ready Stub)
+// ═══════════════════════════════════════════════════════════════
+const API_BASE = "http://localhost:8000/api";
+
+const apiService = {
+  analyzeReport: async (reportData) => {
+    // PROTOTYPE: Using local dummy analysis
+    // Production: Replace with real FastAPI call:
+    // return fetch(`${API_BASE}/analyze`, { method: 'POST', body: JSON.stringify(reportData), headers: {'Content-Type':'application/json'} }).then(r => r.json());
+
+    await new Promise(r => setTimeout(r, 2800)); // Simulate AI processing
+
+    const highKeywords = ["restricted", "without helmet", "without harness", "bypassed", "confined space", "gas leak", "pressurized", "live wire", "ignition"];
+    const desc = (reportData.description || "").toLowerCase();
+    const hasHighRisk = highKeywords.some(k => desc.includes(k));
+
+    return {
+      sif_detected: hasHighRisk || reportData.report_type === "Near Miss",
+      risk_level: hasHighRisk ? "HIGH" : "MEDIUM",
+      confidence: hasHighRisk ? (0.85 + Math.random() * 0.1) : (0.65 + Math.random() * 0.15),
+      indicators: hasHighRisk
+        ? ["PPE Failure", "Unsafe Access", "Working at Height", "Energy Isolation Issue"]
+        : ["Unsafe Access", "PPE Failure"],
+      recommendations: [
+        "Ensure mandatory PPE compliance before work begins",
+        "Restrict unauthorized access to hazardous areas",
+        "Conduct immediate supervisor verification",
+        "Review existing safety control measures",
+        "Perform toolbox safety briefing for all workers"
+      ],
+      nlp_entities: {
+        keywords: ["restricted area", "PPE", "maintenance", "safety harness"],
+        safety_entities: ["Work Platform", "PPE", "Maintenance Zone"],
+        risk_indicators: ["Height Risk", "PPE Non-compliance", "Unauthorized Access"],
+        consequences: ["Fall from height", "Crush injury", "Fatality"]
+      },
+      risk_factors: { severity: "High", exposure: "High", likelihood: "Medium", controlEffectiveness: "Low", score: 8.7 }
+    };
+  },
+
+  getReports: async () => SAMPLE_REPORTS,
+  getReport: async (id) => SAMPLE_REPORTS.find(r => r.id === id),
+  getRecommendations: async () => RECOMMENDATIONS_DATA,
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  UTILITY COMPONENTS
+// ═══════════════════════════════════════════════════════════════
+
+function RiskBadge({ level }) {
+  const cls = level === "HIGH" ? "high" : level === "CRITICAL" ? "critical" : level === "MEDIUM" ? "medium" : "low";
+  const icons = { HIGH: "fa-triangle-exclamation", CRITICAL: "fa-circle-exclamation", MEDIUM: "fa-circle-half-stroke", LOW: "fa-circle-check" };
+  return (
+    <span className={`risk-badge ${cls}`}>
+      <i className={`fas ${icons[level] || 'fa-circle'}`}></i>
+      {level}
+    </span>
+  );
+}
+
+function SifBadge({ detected }) {
+  return (
+    <span className={`sif-badge ${detected ? "detected" : "not-detected"}`}>
+      <i className={`fas ${detected ? "fa-triangle-exclamation" : "fa-check-circle"}`}></i>
+      {detected ? "DETECTED" : "NOT DETECTED"}
+    </span>
+  );
+}
+
+function StatusBadge({ status }) {
+  const s = (status || "").toLowerCase().replace(/\s+/g, '-');
+  const label = status;
+  const cls = s.includes("pending") ? "pending" : s.includes("review") ? "pending" : s === "closed" ? "closed" : s.includes("complete") || s === "reviewed" ? "reviewed" : "open";
+  return <span className={`status-badge ${cls}`}>{label}</span>;
+}
+
+function LoadingOverlay({ message = "AI/NLP Engine analyzing safety report...", steps = [] }) {
+  const [step, setStep] = useState(0);
+  const defaultSteps = ["Parsing report content...", "Identifying safety keywords...", "Running NLP classification...", "Calculating risk score...", "Generating recommendations..."];
+  const displaySteps = steps.length ? steps : defaultSteps;
+
+  useEffect(() => {
+    const t = setInterval(() => setStep(s => Math.min(s + 1, displaySteps.length - 1)), 500);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="loading-overlay animate-scaleIn">
+      <div className="loading-content">
+        <div className="loading-spinner"><div className="inner-ring"></div></div>
+        <h2 className="loading-title">{message}</h2>
+        <p className="loading-subtitle" style={{color: 'var(--accent-primary)', fontWeight: 600, fontSize: '13px', marginBottom: '8px', fontFamily: 'var(--font-mono)'}}>
+          {displaySteps[step]}
+        </p>
+        <div className="loading-progress">
+          <div className="loading-progress-bar">
+            <div className="loading-progress-fill"></div>
+          </div>
+        </div>
+        <div className="loading-dots" style={{marginTop: '16px'}}>
+          <div className="loading-dot"></div>
+          <div className="loading-dot"></div>
+          <div className="loading-dot"></div>
+        </div>
+        <p style={{fontSize:'11px', color:'var(--text-muted)', marginTop:'16px'}}>
+          ⚠️ PROTOTYPE DEMO — Sample AI Analysis Results
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ConfidenceRing({ value }) {
+  const pct = Math.round(value * 100);
+  const r = 34;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  const color = pct >= 90 ? '#ff6d00' : pct >= 75 ? '#ffab00' : '#00c853';
+  return (
+    <div className="confidence-ring">
+      <svg width="80" height="80" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
+        <circle cx="40" cy="40" r={r} fill="none" stroke={color} strokeWidth="6"
+          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+          style={{transition: 'stroke-dasharray 1s ease'}} />
+      </svg>
+      <div className="confidence-ring-text">{pct}%</div>
+    </div>
+  );
+}
+
+function ChartBar({ data, colors, height = 180 }) {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    if (chartRef.current) chartRef.current.destroy();
+
+    const ctx = canvasRef.current.getContext('2d');
+    chartRef.current = new Chart(ctx, {
+      type: data.type || 'bar',
+      data: {
+        labels: data.labels,
+        datasets: data.datasets || [{
+          data: data.values,
+          backgroundColor: colors || ['rgba(30,144,255,0.7)'],
+          borderColor: colors || ['rgba(30,144,255,1)'],
+          borderWidth: 1,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: data.showLegend || false, labels: { color: '#8fafd4', font: { size: 11 }, padding: 16 } },
+          tooltip: {
+            backgroundColor: 'rgba(7,20,40,0.95)',
+            titleColor: '#e8f0fe',
+            bodyColor: '#8fafd4',
+            borderColor: 'rgba(58,107,196,0.4)',
+            borderWidth: 1,
+            padding: 10,
+          }
+        },
+        scales: data.type === 'pie' || data.type === 'doughnut' ? {} : {
+          x: { grid: { color: 'rgba(58,107,196,0.08)' }, ticks: { color: '#8fafd4', font: { size: 11 } } },
+          y: { grid: { color: 'rgba(58,107,196,0.08)' }, ticks: { color: '#8fafd4', font: { size: 11 } } }
+        },
+        animation: { duration: 800, easing: 'easeInOutQuart' }
+      }
+    });
+    return () => { if (chartRef.current) chartRef.current.destroy(); };
+  }, [JSON.stringify(data)]);
+
+  return <canvas ref={canvasRef} style={{maxHeight: height + 'px'}}></canvas>;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SIDEBAR
+// ═══════════════════════════════════════════════════════════════
+const NAV_ITEMS = [
+  { id: "dashboard", label: "Dashboard", icon: "fa-gauge-high" },
+  { id: "submit", label: "Submit Report", icon: "fa-file-circle-plus" },
+  { id: "reports", label: "Reports", icon: "fa-folder-open", badge: "11" },
+  { id: "analysis", label: "AI Analysis", icon: "fa-brain" },
+  { id: "risk-monitoring", label: "Risk Monitoring", icon: "fa-shield-exclamation", badge: "3" },
+  { id: "analytics", label: "Analytics", icon: "fa-chart-line" },
+  { id: "sif-categories", label: "SIF Categories", icon: "fa-triangle-exclamation" },
+  { id: "recommendations", label: "Recommendations", icon: "fa-list-check" },
+  { id: "settings", label: "Settings", icon: "fa-gear" },
+];
+
+function Sidebar({ activePage, setPage, user, onLogout, isOpen, onClose }) {
+  return (
+    <>
+      {isOpen && <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:99}} />}
+      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-icon"><i className="fas fa-shield-halved"></i></div>
+          <div className="sidebar-logo-text">
+            <span className="brand-name">SIF Safety Intelligence</span>
+            <span className="brand-sub">Team Visionaries (ID: 27) • SIH 2026</span>
+          </div>
+        </div>
+
+        <nav className="sidebar-nav">
+          <div className="nav-section-label">Navigation</div>
+          {NAV_ITEMS.map(item => (
+            <div key={item.id}
+              className={`nav-item ${activePage === item.id ? 'active' : ''}`}
+              onClick={() => { setPage(item.id); onClose && onClose(); }}>
+              <span className="nav-icon"><i className={`fas ${item.icon}`}></i></span>
+              {item.label}
+              {item.badge && <span className="nav-badge">{item.badge}</span>}
+            </div>
+          ))}
+          <div style={{flex:1}} />
+          <div className="nav-item" onClick={onLogout} style={{marginTop:'8px', color:'var(--risk-critical)'}}>
+            <span className="nav-icon"><i className="fas fa-right-from-bracket"></i></span>
+            Logout
+          </div>
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="sidebar-user">
+            <div className="sidebar-user-avatar">{(user?.name || 'U')[0]}</div>
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-name">{user?.name || 'Safety Officer'}</div>
+              <div className="sidebar-user-role">{user?.role || 'HSE Department'}</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NAVBAR
+// ═══════════════════════════════════════════════════════════════
+const PAGE_TITLES = {
+  dashboard: "Safety Intelligence Dashboard",
+  submit: "Submit Safety Report",
+  reports: "Report Management",
+  analysis: "AI/NLP Analysis",
+  "risk-monitoring": "Risk Monitoring",
+  analytics: "Safety Analytics",
+  "sif-categories": "SIF Precursor Categories",
+  recommendations: "Safety Recommendations",
+  settings: "System Settings",
+  "report-details": "Report Details"
+};
+
+function Navbar({ page, user, onMenuToggle }) {
+  const [showNotif, setShowNotif] = useState(false);
+  const notifRef = useRef(null);
+
+  useEffect(() => {
+    function handle(e) { if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotif(false); }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, []);
+
+  const notifications = [
+    { type: "critical", icon: "fa-triangle-exclamation", msg: "High-risk SIF precursor detected in OIL-0248", time: "2 min ago" },
+    { type: "high", icon: "fa-bell", msg: "New Near-Miss report submitted — OIL-0249", time: "15 min ago" },
+    { type: "medium", icon: "fa-clock", msg: "Safety review pending for 3 reports", time: "1 hr ago" },
+    { type: "info", icon: "fa-circle-info", msg: "Corrective action overdue: OIL-0228 recommendation", time: "3 hr ago" }
+  ];
+
+  const parentPages = {
+    'report-details': 'reports',
+    'analysis': 'reports',
+    'submit': 'dashboard',
+  };
+  const parent = parentPages[page];
+
+  return (
+    <header className="navbar">
+      <button className="navbar-btn navbar-menu-btn" onClick={onMenuToggle}>
+        <i className="fas fa-bars"></i>
+      </button>
+      <div className="navbar-breadcrumb">
+        <span className="page-title">Dashboard</span>
+        {page !== 'dashboard' && parent && (
+          <>
+            <span className="breadcrumb-sep">›</span>
+            <span className="page-title">{PAGE_TITLES[parent]}</span>
+          </>
+        )}
+        {page !== 'dashboard' && (
+          <>
+            <span className="breadcrumb-sep">›</span>
+            <span className="breadcrumb-current">{PAGE_TITLES[page] || 'Safety System'}</span>
+          </>
+        )}
+      </div>
+      <div className="navbar-actions">
+        <div style={{position:'relative'}} ref={notifRef}>
+          <button className="navbar-btn" onClick={() => setShowNotif(s => !s)}>
+            <i className="fas fa-bell"></i>
+            <span className="notif-dot"></span>
+          </button>
+          {showNotif && (
+            <div className="notification-dropdown animate-fadeIn">
+              <div className="notif-header">
+                <h4>Notifications</h4>
+                <span>Mark all read</span>
+              </div>
+              {notifications.map((n, i) => (
+                <div className="notif-item" key={i}>
+                  <div className={`notif-icon ${n.type}`}><i className={`fas ${n.icon}`}></i></div>
+                  <div className="notif-content">
+                    <p>{n.msg}</p>
+                    <span>{n.time}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <button className="navbar-btn"><i className="fas fa-magnifying-glass"></i></button>
+        <div className="navbar-user">
+          <div className="navbar-avatar">{(user?.name || 'U')[0]}</div>
+          <span className="navbar-user-name">{user?.name?.split(' ')[0] || 'Officer'}</span>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LOGIN PAGE
+// ═══════════════════════════════════════════════════════════════
+function LoginPage({ onLogin }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const DEMO_ID = 'abdul123';
+  const DEMO_PWD = '123456789';
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 1200));
+    const validEmails = ['officer@oil.co.in', 'admin@oil.co.in', 'hse@oil.co.in'];
+    const validPwd = 'oil@2026';
+    if (
+      (validEmails.includes(email.toLowerCase()) && (password === validPwd)) ||
+      (email === DEMO_ID && password === DEMO_PWD)
+    ) {
+      onLogin({ name: 'Rajesh Kumar', role: 'Senior Safety Officer', email });
+    } else {
+      setError(`Invalid credentials. Use Demo ID: ${DEMO_ID} / Password: ${DEMO_PWD}`);
+      setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = () => {
+    setEmail(DEMO_ID);
+    setPassword(DEMO_PWD);
+    setError('');
+    setLoading(true);
+    setTimeout(() => {
+      onLogin({ name: 'Rajesh Kumar', role: 'Senior Safety Officer', email: DEMO_ID });
+    }, 1000);
+  };
+
+  return (
+    <div className="login-page">
+      <div className="login-bg-pattern"></div>
+      <div className="login-grid-overlay"></div>
+
+      <div className="login-left animate-fadeIn">
+        <div className="login-brand">
+          <div className="login-brand-icon"><i className="fas fa-shield-halved"></i></div>
+          <div className="login-brand-text">
+            <h1>SIF Safety Intelligence</h1>
+            <p>OIL INDIA LIMITED • HSE DIVISION</p>
+          </div>
+        </div>
+        <h2 className="login-hero-title">
+          AI-Powered <span>Safety Intelligence</span> for the Oil & Gas Industry
+        </h2>
+        <p className="login-hero-desc">
+          Advanced NLP engine that detects Serious Injury &amp; Fatality (SIF) precursors in
+          safety reports, enabling proactive risk management and life-saving interventions.
+        </p>
+        <div className="login-features">
+          {[
+            { icon: "fa-brain", title: "AI/NLP Analysis", desc: "Intelligent detection of SIF precursor patterns" },
+            { icon: "fa-chart-line", title: "Real-time Risk Monitoring", desc: "Live dashboards with risk classification" },
+            { icon: "fa-shield-check", title: "Preventive Recommendations", desc: "AI-generated safety action plans" }
+          ].map((f, i) => (
+            <div className="login-feature" key={i}>
+              <div className="login-feature-icon"><i className={`fas ${f.icon}`}></i></div>
+              <div className="login-feature-text"><h4>{f.title}</h4><p>{f.desc}</p></div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="login-right">
+        <div className="login-card animate-scaleIn">
+          <div style={{display:'flex', alignItems:'center', gap:'12px', marginBottom:'24px'}}>
+            <div className="login-brand-icon" style={{width:'40px', height:'40px', fontSize:'18px', borderRadius:'10px'}}>
+              <i className="fas fa-shield-halved"></i>
+            </div>
+            <div>
+              <div className="login-card-title">Welcome Back</div>
+              <div className="login-card-subtitle">Sign in to your safety system</div>
+            </div>
+          </div>
+
+          {error && (
+            <div style={{background:'rgba(255,23,68,0.1)', border:'1px solid rgba(255,23,68,0.3)', borderRadius:'8px', padding:'10px 14px', fontSize:'13px', color:'var(--risk-critical)', marginBottom:'16px'}}>
+              <i className="fas fa-circle-exclamation" style={{marginRight:'8px'}}></i>{error}
+            </div>
+          )}
+
+          <form className="login-form" onSubmit={handleLogin}>
+            <div className="login-input-group">
+              <i className="fas fa-envelope login-input-icon"></i>
+              <input className="login-input" type="text" placeholder="Email / Employee ID"
+                value={email} onChange={e => setEmail(e.target.value)} required />
+            </div>
+            <div className="login-input-group">
+              <i className="fas fa-lock login-input-icon"></i>
+              <input className="login-input" type="password" placeholder="Password"
+                value={password} onChange={e => setPassword(e.target.value)} required />
+            </div>
+            <div className="login-row">
+              <label className="checkbox-group">
+                <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} />
+                <span>Remember me</span>
+              </label>
+              <span className="login-link">Forgot password?</span>
+            </div>
+            <button type="submit" className="login-btn" disabled={loading}>
+              {loading ? <><i className="fas fa-spinner fa-spin"></i> Authenticating...</> : <><i className="fas fa-right-to-bracket"></i> Sign In</>}
+            </button>
+          </form>
+
+          <div className="login-demo-box" onClick={handleDemoLogin}>
+            <div className="login-demo-box-header">
+              <i className="fas fa-bolt"></i>
+              <span>Quick Demo Access</span>
+              <span className="login-demo-box-badge">Click to Login</span>
+            </div>
+            <div className="login-demo-box-creds">
+              <div className="login-demo-cred-row">
+                <span className="login-demo-cred-label"><i className="fas fa-user"></i> ID</span>
+                <span className="login-demo-cred-value">abdul123</span>
+              </div>
+              <div className="login-demo-cred-row">
+                <span className="login-demo-cred-label"><i className="fas fa-lock"></i> PWD</span>
+                <span className="login-demo-cred-value">123456789</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{marginTop:'14px', textAlign:'center', fontSize:'11px', color:'var(--text-muted)'}}>
+            Smart India Hackathon 2026 • Problem ID: SIH26165<br />
+            Theme: Smart Automation | Category: Software
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DASHBOARD PAGE
+// ═══════════════════════════════════════════════════════════════
+function DashboardPage({ setPage, setSelectedReport }) {
+  const stats = [
+    { label: "Total Reports", value: 248, icon: "fa-file-lines", color: "var(--accent-primary)", iconBg: "rgba(30,144,255,0.15)", change: "+12", up: true, accent: "var(--accent-primary)" },
+    { label: "SIF Precursors", value: 37, icon: "fa-triangle-exclamation", color: "var(--risk-critical)", iconBg: "rgba(255,23,68,0.15)", change: "+4", up: false, accent: "var(--risk-critical)" },
+    { label: "High Risk Reports", value: 18, icon: "fa-circle-exclamation", color: "var(--risk-high)", iconBg: "rgba(255,109,0,0.15)", change: "+2", up: false, accent: "var(--risk-high)" },
+    { label: "Medium Risk", value: 76, icon: "fa-circle-half-stroke", color: "var(--risk-medium)", iconBg: "rgba(255,171,0,0.15)", change: "+6", up: true, accent: "var(--risk-medium)" },
+    { label: "Low Risk", value: 154, icon: "fa-circle-check", color: "var(--risk-low)", iconBg: "rgba(0,200,83,0.15)", change: "+4", up: true, accent: "var(--risk-low)" },
+    { label: "Pending Reviews", value: 12, icon: "fa-hourglass-half", color: "var(--accent-secondary)", iconBg: "rgba(0,212,255,0.15)", change: "-3", up: true, accent: "var(--accent-secondary)" }
+  ];
+
+  const recentReports = SAMPLE_REPORTS.slice(0, 6);
+
+  return (
+    <div className="page-content page-enter">
+      <div className="page-header">
+        <div style={{display:'flex', alignItems:'center', flexWrap:'wrap', gap:'8px'}}>
+          <h1>Safety Intelligence Dashboard</h1>
+          <span className="prototype-badge"><i className="fas fa-flask"></i> PROTOTYPE DEMO</span>
+        </div>
+        <p>AI-powered SIF precursor detection and safety monitoring • OIL India Limited</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="stats-grid">
+        {stats.map((s, i) => (
+          <div className="stat-card" key={i} style={{'--card-accent': s.accent, '--icon-bg': s.iconBg, '--icon-color': s.color}}>
+            <div className="stat-card-header">
+              <div className="stat-card-label">{s.label}</div>
+              <div className="stat-card-icon"><i className={`fas ${s.icon}`}></i></div>
+            </div>
+            <div className="stat-card-value">{s.value.toLocaleString()}</div>
+            <div className="stat-card-change">
+              <span className={s.up ? 'stat-change-up' : 'stat-change-down'}>
+                <i className={`fas ${s.up ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}`}></i> {s.change} this month
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts */}
+      <div className="charts-grid">
+        <div className="chart-card">
+          <div className="chart-card-header">
+            <div>
+              <div className="chart-card-title">Reports by Type</div>
+              <div className="chart-card-subtitle">Distribution of report categories</div>
+            </div>
+          </div>
+          <div className="chart-container">
+            <ChartBar data={{
+              type: 'doughnut', showLegend: true,
+              labels: ['Unsafe Act', 'Unsafe Condition', 'Near Miss'],
+              datasets: [{ data: [89, 97, 62], backgroundColor: ['rgba(255,109,0,0.8)', 'rgba(30,144,255,0.8)', 'rgba(255,23,68,0.8)'], borderColor: 'rgba(7,20,40,0.5)', borderWidth: 2 }]
+            }} height={200} />
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-card-header">
+            <div>
+              <div className="chart-card-title">Risk Distribution</div>
+              <div className="chart-card-subtitle">By severity classification</div>
+            </div>
+          </div>
+          <div className="chart-container">
+            <ChartBar data={{
+              labels: ['Critical', 'High', 'Medium', 'Low'],
+              values: [8, 18, 76, 154],
+              datasets: [{ data: [8, 18, 76, 154], backgroundColor: ['rgba(255,23,68,0.7)', 'rgba(255,109,0,0.7)', 'rgba(255,171,0,0.7)', 'rgba(0,200,83,0.7)'], borderRadius: 4 }]
+            }} height={200} />
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-card-header">
+            <div>
+              <div className="chart-card-title">SIF Precursor Trend</div>
+              <div className="chart-card-subtitle">Monthly detection trend</div>
+            </div>
+          </div>
+          <div className="chart-container">
+            <ChartBar data={{
+              type: 'line', showLegend: true,
+              labels: MONTHLY_TREND.map(m => m.month),
+              datasets: [
+                { label: 'Total Reports', data: MONTHLY_TREND.map(m => m.total), borderColor: 'rgba(30,144,255,0.9)', backgroundColor: 'rgba(30,144,255,0.1)', fill: true, tension: 0.4 },
+                { label: 'SIF Detected', data: MONTHLY_TREND.map(m => m.sif), borderColor: 'rgba(255,23,68,0.9)', backgroundColor: 'rgba(255,23,68,0.1)', fill: true, tension: 0.4 }
+              ]
+            }} height={200} />
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-card-header">
+            <div>
+              <div className="chart-card-title">Common SIF Indicators</div>
+              <div className="chart-card-subtitle">Top detected precursor types</div>
+            </div>
+          </div>
+          <div className="chart-container">
+            <ChartBar data={{
+              labels: ['Working@Height', 'Energy Iso.', 'Vehicle', 'Confined Sp.', 'PPE Failure', 'Fire/Expl.', 'Access', 'Haz. Energy'],
+              values: [42, 35, 31, 28, 38, 19, 45, 27],
+              datasets: [{ data: [42, 35, 31, 28, 38, 19, 45, 27], backgroundColor: 'rgba(30,144,255,0.65)', borderColor: 'rgba(30,144,255,1)', borderWidth: 1, borderRadius: 4 }]
+            }} height={200} />
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Reports Table */}
+      <div className="table-card">
+        <div className="table-header">
+          <div className="table-title"><i className="fas fa-clock-rotate-left" style={{marginRight:'8px', color:'var(--accent-primary)'}}></i>Recent Safety Reports</div>
+          <button className="btn btn-outline btn-sm" onClick={() => setPage('reports')}>
+            View All Reports <i className="fas fa-arrow-right"></i>
+          </button>
+        </div>
+        <div style={{overflowX:'auto'}}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Report ID</th><th>Date</th><th>Type</th><th>Location</th>
+                <th>Risk Level</th><th>SIF Status</th><th>Status</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentReports.map(r => (
+                <tr key={r.id}>
+                  <td><span className="report-id-cell">{r.id}</span></td>
+                  <td style={{color:'var(--text-secondary)'}}>{r.date}</td>
+                  <td><span className="entity-tag" style={{margin:0}}>{r.type}</span></td>
+                  <td style={{fontSize:'12px', color:'var(--text-secondary)'}}>{r.location}</td>
+                  <td><RiskBadge level={r.riskLevel} /></td>
+                  <td><SifBadge detected={r.sifDetected} /></td>
+                  <td><StatusBadge status={r.reviewStatus} /></td>
+                  <td>
+                    <div className="table-action-group">
+                      <button className="btn btn-ghost btn-sm" onClick={() => { setSelectedReport(r); setPage('report-details'); }}>
+                        <i className="fas fa-eye"></i> View
+                      </button>
+                      <button className="btn btn-primary btn-sm" onClick={() => { setSelectedReport(r); setPage('analysis'); }}>
+                        <i className="fas fa-brain"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SUBMIT REPORT PAGE
+// ═══════════════════════════════════════════════════════════════
+function SubmitReportPage({ setPage, setAnalysisResult, setSelectedReport }) {
+  const [form, setForm] = useState({
+    reportId: `OIL-${String(Math.floor(Math.random() * 100) + 249).padStart(4, '0')}`,
+    reportType: 'Near Miss', date: new Date().toISOString().split('T')[0],
+    time: '09:00', location: '', department: '', equipment: '', reporter: '',
+    description: '', immediateAction: '', potentialConsequence: '', existingControls: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  const update = (k, v) => setForm(f => ({...f, [k]: v}));
+
+  const handleAnalyze = async (e) => {
+    e.preventDefault();
+    if (!form.description.trim()) { alert('Please provide an incident description.'); return; }
+    setLoading(true);
+    try {
+      const result = await apiService.analyzeReport({ report_type: form.reportType, description: form.description });
+      const reportObj = { ...form, id: form.reportId, sifDetected: result.sif_detected, riskLevel: result.risk_level, confidence: result.confidence, indicators: result.indicators, recommendations: result.recommendations, aiAnalysis: result.risk_factors, highlights: [], reviewHistory: [{ action: 'Report submitted', by: form.reporter || 'User', time: new Date().toLocaleString() }] };
+      setSelectedReport(reportObj);
+      setAnalysisResult(result);
+      setLoading(false);
+      setPage('analysis');
+    } catch (err) { console.error(err); setLoading(false); }
+  };
+
+  return (
+    <div className="page-content page-enter">
+      {loading && <LoadingOverlay />}
+      <div className="page-header">
+        <h1>Submit Safety Report</h1>
+        <p>Document unsafe acts, unsafe conditions, or near-miss incidents for AI analysis</p>
+      </div>
+
+      <form onSubmit={handleAnalyze}>
+        <div className="form-card mb-6">
+          <div className="form-section-title"><i className="fas fa-id-card"></i>Report Information</div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Report ID</label>
+              <input className="form-control" value={form.reportId} readOnly style={{opacity:0.7}} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Report Type <span className="required">*</span></label>
+              <select className="form-control" value={form.reportType} onChange={e => update('reportType', e.target.value)}>
+                <option>Near Miss</option>
+                <option>Unsafe Act</option>
+                <option>Unsafe Condition</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Date <span className="required">*</span></label>
+              <input className="form-control" type="date" value={form.date} onChange={e => update('date', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Time</label>
+              <input className="form-control" type="time" value={form.time} onChange={e => update('time', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Location <span className="required">*</span></label>
+              <input className="form-control" placeholder="e.g. Drilling Platform B-7" value={form.location} onChange={e => update('location', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Department</label>
+              <select className="form-control" value={form.department} onChange={e => update('department', e.target.value)}>
+                <option value="">Select Department</option>
+                {['Drilling Operations','Process Operations','Pipeline Operations','Offshore Operations','Maintenance','HSE','Logistics','Storage Operations','Gas Operations','Administration'].map(d => <option key={d}>{d}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Equipment / Area</label>
+              <input className="form-control" placeholder="e.g. Elevated Work Platform" value={form.equipment} onChange={e => update('equipment', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Reporter Name <span className="required">*</span></label>
+              <input className="form-control" placeholder="Your name" value={form.reporter} onChange={e => update('reporter', e.target.value)} />
+            </div>
+          </div>
+        </div>
+
+        <div className="form-card mb-6">
+          <div className="form-section-title"><i className="fas fa-file-lines"></i>Incident Description</div>
+          <div className="form-group full-width">
+            <label className="form-label">Description <span className="required">*</span></label>
+            <textarea className="form-control" style={{minHeight:'140px'}}
+              placeholder="Describe the unsafe act, unsafe condition or near-miss incident in detail. Include: what happened, who was involved, what equipment, what hazards were present..."
+              value={form.description} onChange={e => update('description', e.target.value)} />
+          </div>
+
+          {/* Quick Fill Buttons */}
+          <div style={{marginTop:'8px', display:'flex', gap:'8px', flexWrap:'wrap'}}>
+            <span style={{fontSize:'11px', color:'var(--text-muted)', alignSelf:'center'}}>Quick fill (demo):</span>
+            <button type="button" className="btn btn-ghost btn-sm" style={{fontSize:'11px'}}
+              onClick={() => update('description', "Worker entered the restricted maintenance area without helmet and safety harness while maintenance activity was in progress on the elevated platform. Moving equipment was operational nearby without proper barricading.")}>
+              PPE / Height
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" style={{fontSize:'11px'}}
+              onClick={() => update('description', "Operator bypassed energy isolation procedure (LOTO) while performing valve maintenance. Pressurized line was live during work activity. No supervisor was present.")}>
+              Energy Isolation
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" style={{fontSize:'11px'}}
+              onClick={() => update('description', "Worker entered confined space (storage tank) without gas testing or standby attendant. H2S levels were found elevated when tested. Emergency evacuation was required.")}>
+              Confined Space
+            </button>
+          </div>
+        </div>
+
+        <div className="form-card mb-6">
+          <div className="form-section-title"><i className="fas fa-clipboard-list"></i>Additional Information</div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Immediate Action Taken</label>
+              <textarea className="form-control" rows={3} placeholder="What immediate corrective action was taken?" value={form.immediateAction} onChange={e => update('immediateAction', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Potential Consequence</label>
+              <textarea className="form-control" rows={3} placeholder="What could have happened if not caught?" value={form.potentialConsequence} onChange={e => update('potentialConsequence', e.target.value)} />
+            </div>
+            <div className="form-group full-width">
+              <label className="form-label">Existing Controls</label>
+              <textarea className="form-control" rows={2} placeholder="What safety controls were in place?" value={form.existingControls} onChange={e => update('existingControls', e.target.value)} />
+            </div>
+          </div>
+        </div>
+
+        <div className="form-card mb-6">
+          <div className="form-section-title"><i className="fas fa-paperclip"></i>Attachments (Optional)</div>
+          <div className={`file-upload-area ${dragOver ? 'border-accent' : ''}`}
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => { e.preventDefault(); setDragOver(false); }}>
+            <div className="file-upload-icon"><i className="fas fa-cloud-arrow-up"></i></div>
+            <div className="file-upload-text">Drag & drop files here, or <span style={{color:'var(--accent-primary)', cursor:'pointer'}}>browse</span></div>
+            <div className="file-upload-hint">Supported: PDF, DOCX, TXT, CSV, JPG, PNG — Max 25MB</div>
+          </div>
+        </div>
+
+        <div className="form-actions">
+          <button type="button" className="btn btn-ghost" onClick={() => setForm(f => ({...f, description:'', immediateAction:'', potentialConsequence:'', existingControls:''}))}>
+            <i className="fas fa-eraser"></i> Clear
+          </button>
+          <button type="button" className="btn btn-outline">
+            <i className="fas fa-floppy-disk"></i> Save Draft
+          </button>
+          <button type="submit" className="btn btn-primary btn-lg">
+            <i className="fas fa-brain"></i> Analyze Report
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ANALYSIS PAGE
+// ═══════════════════════════════════════════════════════════════
+function AnalysisPage({ report, analysisResult, setPage, setSelectedReport }) {
+  const r = report || SAMPLE_REPORTS[0];
+  const result = analysisResult || { sif_detected: r.sifDetected, risk_level: r.riskLevel, confidence: r.confidence };
+
+  const indicatorData = [
+    { name: "Working at Height", severity: "Critical", confidence: 94, icon: "fa-person-falling" },
+    { name: "Missing PPE", severity: "High", confidence: 89, icon: "fa-helmet-safety" },
+    { name: "Unsafe Access", severity: "High", confidence: 86, icon: "fa-door-open" },
+    { name: "Energy Isolation Issue", severity: "Critical", confidence: 91, icon: "fa-bolt" }
+  ];
+
+  const fullIndicators = r.indicators ? r.indicators.map((name, i) => ({
+    name, severity: i % 3 === 0 ? "Critical" : "High",
+    confidence: Math.round((r.confidence || 0.88) * 100 - (i * 3)),
+    icon: ["fa-helmet-safety","fa-door-open","fa-person-falling","fa-bolt"][i % 4]
+  })) : indicatorData;
+
+  const descText = r.description || "Worker entered the restricted maintenance area without helmet and safety harness while maintenance activity was in progress.";
+  const highlights = r.highlights || ["restricted maintenance area", "without helmet", "without safety harness", "maintenance activity"];
+
+  function highlightText(text, hl) {
+    if (!hl || hl.length === 0) return [<span key="0">{text}</span>];
+    let parts = [text];
+    hl.forEach(h => {
+      parts = parts.flatMap(p => {
+        if (typeof p !== 'string') return [p];
+        const idx = p.toLowerCase().indexOf(h.toLowerCase());
+        if (idx === -1) return [p];
+        return [p.slice(0, idx), <mark key={h} className="nlp-highlight" title="SIF indicator detected">{p.slice(idx, idx + h.length)}</mark>, p.slice(idx + h.length)];
+      });
+    });
+    return parts;
+  }
+
+  const riskScore = r.aiAnalysis?.score || 8.7;
+
+  return (
+    <div className="page-content page-enter">
+      <div className="page-header">
+        <div style={{display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap'}}>
+          <h1>AI/NLP Safety Analysis</h1>
+          <span className="prototype-badge"><i className="fas fa-flask"></i> SAMPLE AI RESULTS</span>
+        </div>
+        <p>Report {r.id || 'OIL-0248'} • {r.date} • {r.type} • {r.location}</p>
+      </div>
+
+      {/* Key Metrics */}
+      <div className="analysis-header-grid">
+        <div className="analysis-metric-card">
+          <div className="analysis-metric-label">Analysis Status</div>
+          <div className="analysis-metric-value completed">COMPLETED</div>
+          <div style={{fontSize:'11px', color:'var(--risk-low)', marginTop:'4px'}}><i className="fas fa-check-circle"></i> NLP Engine v2.1</div>
+        </div>
+        <div className="analysis-metric-card">
+          <div className="analysis-metric-label">SIF Precursor</div>
+          <div className={`analysis-metric-value ${result.sif_detected ? 'detected' : ''}`}>
+            {result.sif_detected ? 'DETECTED' : 'NOT FOUND'}
+          </div>
+          <div style={{fontSize:'11px', color: result.sif_detected ? 'var(--risk-critical)' : 'var(--risk-low)', marginTop:'4px'}}>
+            <i className={`fas ${result.sif_detected ? 'fa-triangle-exclamation' : 'fa-check-circle'}`}></i>
+            {result.sif_detected ? ' Immediate action required' : ' No SIF patterns found'}
+          </div>
+        </div>
+        <div className="analysis-metric-card">
+          <div className="analysis-metric-label">Risk Level</div>
+          <div className={`analysis-metric-value ${result.risk_level === 'HIGH' ? 'high' : ''}`}>
+            {result.risk_level || r.riskLevel}
+          </div>
+          <RiskBadge level={result.risk_level || r.riskLevel} />
+        </div>
+        <div className="analysis-metric-card">
+          <div className="analysis-metric-label">AI Confidence</div>
+          <ConfidenceRing value={result.confidence || r.confidence || 0.92} />
+        </div>
+      </div>
+
+      {/* SIF Explanation */}
+      {result.sif_detected && (
+        <div className="sif-explanation">
+          <div className="sif-explanation-icon"><i className="fas fa-triangle-exclamation"></i></div>
+          <div className="sif-explanation-text">
+            <strong>⚠️ SIF Precursor Detected — Prototype AI Result:</strong> The submitted report contains language patterns and safety indicators associated with potential Serious Injury &amp; Fatality (SIF) precursors. The NLP engine has identified high-risk keywords including unsafe access, PPE non-compliance, and elevated work scenarios. Immediate safety review and corrective action are recommended.
+          </div>
+        </div>
+      )}
+
+      {/* Detected SIF Indicators */}
+      <div className="chart-card mb-6">
+        <div className="chart-card-header">
+          <div>
+            <div className="chart-card-title"><i className="fas fa-radar" style={{marginRight:'8px', color:'var(--risk-critical)'}}></i>Detected SIF Indicators</div>
+            <div className="chart-card-subtitle">NLP-identified safety risk patterns — Sample prototype analysis</div>
+          </div>
+        </div>
+        <div className="indicators-grid">
+          {fullIndicators.map((ind, i) => (
+            <div className="indicator-card" key={i}>
+              <div className={`indicator-icon-wrap ${ind.severity.toLowerCase()}`}>
+                <i className={`fas ${ind.icon}`}></i>
+              </div>
+              <div>
+                <div className="indicator-name">{ind.name}</div>
+                <div className="indicator-details">
+                  <span className={`indicator-severity ${ind.severity.toLowerCase()}`}>
+                    {ind.severity}
+                  </span>
+                  <span className="indicator-confidence">
+                    <i className="fas fa-brain" style={{fontSize:'9px'}}></i> {ind.confidence}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* NLP Text Highlighting */}
+      <div className="nlp-text-container">
+        <div style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px', paddingBottom:'14px', borderBottom:'1px solid var(--border-color)'}}>
+          <div style={{background:'rgba(30,144,255,0.15)', padding:'8px 12px', borderRadius:'8px', color:'var(--accent-primary)', fontSize:'13px', fontWeight:600}}>
+            <i className="fas fa-highlighter" style={{marginRight:'6px'}}></i>NLP Text Analysis
+          </div>
+          <span style={{fontSize:'12px', color:'var(--text-muted)'}}>Highlighted phrases indicate detected SIF indicators</span>
+        </div>
+        <div className="nlp-text">
+          {highlightText(descText, highlights)}
+        </div>
+        <div className="nlp-entities-grid">
+          <div className="nlp-entity-group">
+            <h4><i className="fas fa-key" style={{marginRight:'5px'}}></i>Detected Keywords</h4>
+            {['restricted area', 'PPE', 'maintenance', 'safety harness', 'hazard'].map(t => <span key={t} className="entity-tag">{t}</span>)}
+          </div>
+          <div className="nlp-entity-group">
+            <h4><i className="fas fa-shield" style={{marginRight:'5px'}}></i>Safety Entities</h4>
+            {['Work Platform', 'PPE', 'Maintenance Zone', 'Safety Equipment'].map(t => <span key={t} className="entity-tag" style={{background:'rgba(255,109,0,0.1)', borderColor:'rgba(255,109,0,0.25)', color:'var(--risk-high)'}}>{t}</span>)}
+          </div>
+          <div className="nlp-entity-group">
+            <h4><i className="fas fa-circle-exclamation" style={{marginRight:'5px'}}></i>Risk Indicators</h4>
+            {['Height Risk', 'PPE Non-compliance', 'Unauthorized Access'].map(t => <span key={t} className="entity-tag" style={{background:'rgba(255,23,68,0.1)', borderColor:'rgba(255,23,68,0.25)', color:'var(--risk-critical)'}}>{t}</span>)}
+          </div>
+          <div className="nlp-entity-group">
+            <h4><i className="fas fa-skull-crossbones" style={{marginRight:'5px'}}></i>Potential Consequences</h4>
+            {['Fall from height', 'Crush injury', 'Fatality', 'Serious injury'].map(t => <span key={t} className="entity-tag" style={{background:'rgba(170,0,255,0.1)', borderColor:'rgba(170,0,255,0.25)', color:'#bb86fc'}}>{t}</span>)}
+          </div>
+        </div>
+      </div>
+
+      {/* Risk Assessment + Recommendations */}
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px', marginBottom:'24px'}} className="risk-rec-grid">
+        <div className="risk-meter-card">
+          <div style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'12px'}}>
+            <i className="fas fa-gauge-high" style={{color:'var(--risk-high)', fontSize:'18px'}}></i>
+            <div className="chart-card-title">Risk Assessment</div>
+            <span className="prototype-badge" style={{marginLeft:'auto', fontSize:'10px'}}>DEMO</span>
+          </div>
+          <div className="risk-score-display">
+            <div className="risk-score-number">{riskScore}<span className="risk-score-max">/10</span></div>
+            <div style={{fontSize:'12px', color:'var(--text-muted)', marginTop:'4px'}}>Overall Risk Score</div>
+          </div>
+          <div className="risk-gauge">
+            <div className="risk-gauge-fill" style={{width: `${riskScore * 10}%`}}></div>
+          </div>
+          <div className="risk-factors-grid">
+            {[
+              { label: 'Severity', value: r.aiAnalysis?.severity || 'High', cls: 'high-val' },
+              { label: 'Exposure', value: r.aiAnalysis?.exposure || 'High', cls: 'high-val' },
+              { label: 'Likelihood', value: r.aiAnalysis?.likelihood || 'Medium', cls: 'medium-val' },
+              { label: 'Control Effectiveness', value: r.aiAnalysis?.controlEffectiveness || 'Low', cls: 'critical-val' }
+            ].map((f, i) => (
+              <div className="risk-factor" key={i}>
+                <span className="risk-factor-label">{f.label}</span>
+                <span className={`risk-factor-value ${f.cls}`}>{f.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-card-title" style={{marginBottom:'16px'}}>
+            <i className="fas fa-list-check" style={{marginRight:'8px', color:'var(--accent-primary)'}}></i>
+            Recommended Preventive Actions
+          </div>
+          <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+            {(r.recommendations || ["Ensure mandatory PPE compliance", "Restrict unauthorized access", "Verify safety harness availability", "Conduct toolbox safety briefing", "Review existing control measures", "Perform supervisor verification"]).map((rec, i) => (
+              <div key={i} style={{display:'flex', gap:'10px', alignItems:'flex-start', padding:'10px 14px', background:'rgba(30,144,255,0.05)', border:'1px solid var(--border-color)', borderRadius:'8px'}}>
+                <div style={{width:'22px', height:'22px', background:'var(--accent-primary)', color:'white', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:'700', flexShrink:0}}>{i+1}</div>
+                <span style={{fontSize:'13px', color:'var(--text-primary)'}}>{rec}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{display:'flex', gap:'8px', marginTop:'16px', paddingTop:'16px', borderTop:'1px solid var(--border-color)', flexWrap:'wrap'}}>
+            <button className="btn btn-primary btn-sm"><i className="fas fa-user-check"></i> Assign Action</button>
+            <button className="btn btn-outline btn-sm"><i className="fas fa-bookmark"></i> Mark for Review</button>
+            <button className="btn btn-ghost btn-sm"><i className="fas fa-download"></i> Export</button>
+          </div>
+        </div>
+      </div>
+
+      <div style={{display:'flex', gap:'12px', justifyContent:'flex-end', flexWrap:'wrap'}}>
+        <button className="btn btn-ghost" onClick={() => setPage('reports')}>
+          <i className="fas fa-arrow-left"></i> Back to Reports
+        </button>
+        <button className="btn btn-outline" onClick={() => setPage('submit')}>
+          <i className="fas fa-plus"></i> New Report
+        </button>
+        <button className="btn btn-outline" onClick={() => { setSelectedReport(r); setPage('report-details'); }}>
+          <i className="fas fa-eye"></i> Full Report Details
+        </button>
+        <button className="btn btn-primary" onClick={() => setPage('dashboard')}>
+          <i className="fas fa-gauge-high"></i> Dashboard
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  REPORTS PAGE
+// ═══════════════════════════════════════════════════════════════
+function ReportsPage({ setPage, setSelectedReport }) {
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('All');
+  const [riskFilter, setRiskFilter] = useState('All');
+
+  const filtered = useMemo(() => SAMPLE_REPORTS.filter(r => {
+    const matchSearch = !search || r.id.toLowerCase().includes(search.toLowerCase()) || r.location.toLowerCase().includes(search.toLowerCase()) || r.reporter.toLowerCase().includes(search.toLowerCase()) || r.description.toLowerCase().includes(search.toLowerCase());
+    const matchType = typeFilter === 'All' || r.type === typeFilter;
+    const matchRisk = riskFilter === 'All' || r.riskLevel === riskFilter;
+    return matchSearch && matchType && matchRisk;
+  }), [search, typeFilter, riskFilter]);
+
+  return (
+    <div className="page-content page-enter">
+      <div className="page-header">
+        <h1>Report Management</h1>
+        <p>View, filter, and manage all safety reports — {SAMPLE_REPORTS.length} total records</p>
+      </div>
+      <div className="table-card">
+        <div className="table-header">
+          <div className="table-title"><i className="fas fa-folder-open" style={{marginRight:'8px', color:'var(--accent-primary)'}}></i>Safety Reports ({filtered.length})</div>
+          <div className="table-controls">
+            <div className="search-box">
+              <i className="fas fa-magnifying-glass" style={{color:'var(--text-muted)', fontSize:'13px'}}></i>
+              <input placeholder="Search ID, location, reporter..." value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            <select className="select-filter" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+              <option>All</option><option>Unsafe Act</option><option>Unsafe Condition</option><option>Near Miss</option>
+            </select>
+            <select className="select-filter" value={riskFilter} onChange={e => setRiskFilter(e.target.value)}>
+              <option>All</option><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option>
+            </select>
+            <button className="btn btn-primary btn-sm" onClick={() => setPage('submit')}>
+              <i className="fas fa-plus"></i> New Report
+            </button>
+          </div>
+        </div>
+        <div style={{overflowX:'auto'}}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Report ID</th><th>Date</th><th>Type</th><th>Location</th>
+                <th>Description</th><th>Risk Level</th><th>SIF Detected</th>
+                <th>AI Confidence</th><th>Review Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(r => (
+                <tr key={r.id}>
+                  <td><span className="report-id-cell">{r.id}</span></td>
+                  <td style={{color:'var(--text-secondary)', fontSize:'12px', whiteSpace:'nowrap'}}>{r.date}</td>
+                  <td><span className="entity-tag" style={{margin:0, fontSize:'11px'}}>{r.type}</span></td>
+                  <td style={{fontSize:'12px', color:'var(--text-secondary)', maxWidth:'130px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{r.location}</td>
+                  <td style={{maxWidth:'200px'}}>
+                    <div style={{fontSize:'12px', color:'var(--text-secondary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'200px'}} title={r.description}>{r.description}</div>
+                  </td>
+                  <td><RiskBadge level={r.riskLevel} /></td>
+                  <td><SifBadge detected={r.sifDetected} /></td>
+                  <td>
+                    <div style={{display:'flex', alignItems:'center', gap:'6px'}}>
+                      <div style={{flex:1, height:'4px', background:'rgba(255,255,255,0.08)', borderRadius:'2px', minWidth:'50px'}}>
+                        <div style={{height:'100%', width:`${Math.round(r.confidence*100)}%`, background:'var(--accent-primary)', borderRadius:'2px'}}></div>
+                      </div>
+                      <span style={{fontSize:'12px', fontWeight:700, color:'var(--text-primary)'}}>{Math.round(r.confidence*100)}%</span>
+                    </div>
+                  </td>
+                  <td><StatusBadge status={r.reviewStatus} /></td>
+                  <td>
+                    <div className="table-action-group">
+                      <button className="btn btn-ghost btn-sm" title="View Details" onClick={() => { setSelectedReport(r); setPage('report-details'); }}>
+                        <i className="fas fa-eye"></i>
+                      </button>
+                      <button className="btn btn-primary btn-sm" title="AI Analysis" onClick={() => { setSelectedReport(r); setPage('analysis'); }}>
+                        <i className="fas fa-brain"></i>
+                      </button>
+                      <button className="btn btn-outline btn-sm" title="Export">
+                        <i className="fas fa-download"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={10}>
+                  <div className="empty-state">
+                    <div className="empty-state-icon"><i className="fas fa-folder-open"></i></div>
+                    <div className="empty-state-title">No reports found</div>
+                    <div className="empty-state-desc">Try adjusting your search or filters</div>
+                  </div>
+                </td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RISK MONITORING PAGE
+// ═══════════════════════════════════════════════════════════════
+function RiskMonitoringPage({ setPage, setSelectedReport }) {
+  const critical = SAMPLE_REPORTS.filter(r => r.sifDetected && r.riskLevel === 'HIGH').slice(0, 3);
+  const high = SAMPLE_REPORTS.filter(r => r.sifDetected && r.riskLevel === 'HIGH').slice(3, 6);
+  const medium = SAMPLE_REPORTS.filter(r => r.riskLevel === 'MEDIUM');
+
+  const AlertCard = ({ report, level }) => (
+    <div className={`alert-card ${level.toLowerCase()}`}>
+      <div className="alert-icon"><i className={`fas ${level === 'CRITICAL' ? 'fa-circle-exclamation' : level === 'HIGH' ? 'fa-triangle-exclamation' : 'fa-exclamation'}`}></i></div>
+      <div className="alert-content">
+        <div className="alert-severity">{level} ALERT</div>
+        <div className="alert-title">Report #{report.id}</div>
+        <div className="alert-subtitle">{report.indicators?.[0] || 'SIF Precursor Detected'} — {report.location}</div>
+        <div className="alert-meta">
+          <span><i className="fas fa-brain" style={{marginRight:'4px'}}></i>AI Confidence: {Math.round(report.confidence*100)}%</span>
+          <span style={{marginLeft:'12px'}}><i className="fas fa-clock" style={{marginRight:'4px'}}></i>{report.date}</span>
+        </div>
+      </div>
+      <div className="alert-actions">
+        <button className="btn btn-danger btn-sm" onClick={() => { setSelectedReport(report); setPage('analysis'); }}>Analyze</button>
+        <button className="btn btn-outline btn-sm" onClick={() => { setSelectedReport(report); setPage('report-details'); }}>View</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="page-content page-enter">
+      <div className="page-header">
+        <div style={{display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap'}}>
+          <h1>Risk Monitoring</h1>
+          <div style={{display:'flex', gap:'8px'}}>
+            <span style={{background:'rgba(255,23,68,0.15)', border:'1px solid rgba(255,23,68,0.3)', color:'var(--risk-critical)', fontSize:'11px', padding:'4px 10px', borderRadius:'20px', fontWeight:700, display:'flex', alignItems:'center', gap:'5px'}}>
+              <span style={{width:'6px', height:'6px', background:'var(--risk-critical)', borderRadius:'50%', display:'inline-block', animation:'pulse 1s infinite'}}></span>
+              LIVE MONITORING
+            </span>
+          </div>
+        </div>
+        <p>Real-time safety alert monitoring and SIF precursor tracking</p>
+      </div>
+
+      {/* Summary */}
+      <div className="stats-grid" style={{gridTemplateColumns:'repeat(3, 1fr)', marginBottom:'28px'}}>
+        {[
+          { label: 'Critical Risk Alerts', value: critical.length, color: 'var(--risk-critical)', icon: 'fa-circle-exclamation', iconBg: 'rgba(255,23,68,0.15)' },
+          { label: 'High Risk Alerts', value: high.length + 3, color: 'var(--risk-high)', icon: 'fa-triangle-exclamation', iconBg: 'rgba(255,109,0,0.15)' },
+          { label: 'Medium Risk Alerts', value: medium.length, color: 'var(--risk-medium)', icon: 'fa-exclamation', iconBg: 'rgba(255,171,0,0.15)' }
+        ].map((s, i) => (
+          <div className="stat-card" key={i} style={{'--card-accent': s.color, '--icon-bg': s.iconBg, '--icon-color': s.color}}>
+            <div className="stat-card-header">
+              <div className="stat-card-label">{s.label}</div>
+              <div className="stat-card-icon"><i className={`fas ${s.icon}`}></i></div>
+            </div>
+            <div className="stat-card-value" style={{color: s.color}}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Critical Alerts */}
+      <div className="chart-card mb-6">
+        <div className="chart-card-header" style={{marginBottom:'16px'}}>
+          <div>
+            <div className="chart-card-title" style={{color:'var(--risk-critical)'}}>
+              <i className="fas fa-siren" style={{marginRight:'8px'}}></i>Critical Risk Alerts
+            </div>
+            <div className="chart-card-subtitle">Reports requiring immediate attention</div>
+          </div>
+        </div>
+        {critical.map(r => <AlertCard key={r.id} report={r} level="CRITICAL" />)}
+      </div>
+
+      <div className="chart-card mb-6">
+        <div className="chart-card-header" style={{marginBottom:'16px'}}>
+          <div>
+            <div className="chart-card-title" style={{color:'var(--risk-high)'}}>
+              <i className="fas fa-triangle-exclamation" style={{marginRight:'8px'}}></i>High Risk Alerts
+            </div>
+          </div>
+        </div>
+        {SAMPLE_REPORTS.filter(r => r.sifDetected).slice(2, 5).map(r => <AlertCard key={r.id} report={r} level="HIGH" />)}
+      </div>
+
+      <div className="chart-card">
+        <div className="chart-card-header" style={{marginBottom:'16px'}}>
+          <div>
+            <div className="chart-card-title" style={{color:'var(--risk-medium)'}}>
+              <i className="fas fa-exclamation" style={{marginRight:'8px'}}></i>Medium Risk Alerts
+            </div>
+          </div>
+        </div>
+        {medium.map(r => <AlertCard key={r.id} report={r} level="MEDIUM" />)}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ANALYTICS PAGE
+// ═══════════════════════════════════════════════════════════════
+function AnalyticsPage() {
+  const [dateFilter, setDateFilter] = useState('30 Days');
+  const filters = ['Today', '7 Days', '30 Days', '3 Months', '1 Year', 'Custom'];
+
+  return (
+    <div className="page-content page-enter">
+      <div className="page-header">
+        <h1>Safety Analytics</h1>
+        <p>Advanced safety data analysis and trend visualization</p>
+      </div>
+
+      <div className="date-filter-bar">
+        <span className="date-filter-label"><i className="fas fa-calendar" style={{marginRight:'4px'}}></i>Period:</span>
+        {filters.map(f => (
+          <button key={f} className={`date-filter-btn ${dateFilter === f ? 'active' : ''}`}
+            onClick={() => setDateFilter(f)}>{f}</button>
+        ))}
+      </div>
+
+      <div className="analytics-grid">
+        <div className="chart-card">
+          <div className="chart-card-title mb-4">Reports by Month</div>
+          <div className="chart-container">
+            <ChartBar data={{
+              type: 'bar',
+              labels: MONTHLY_TREND.map(m => m.month),
+              datasets: [
+                { label: 'Total', data: MONTHLY_TREND.map(m => m.total), backgroundColor: 'rgba(30,144,255,0.7)', borderRadius: 4 },
+                { label: 'SIF Detected', data: MONTHLY_TREND.map(m => m.sif), backgroundColor: 'rgba(255,23,68,0.7)', borderRadius: 4 }
+              ], showLegend: true
+            }} height={200} />
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-card-title mb-4">Reports by Department</div>
+          <div className="chart-container">
+            <ChartBar data={{
+              labels: ['Drilling', 'Process', 'Pipeline', 'Offshore', 'Maintenance', 'HSE', 'Logistics'],
+              values: [52, 38, 31, 29, 44, 21, 23],
+              datasets: [{ data: [52, 38, 31, 29, 44, 21, 23], backgroundColor: ['rgba(30,144,255,0.7)','rgba(255,109,0,0.7)','rgba(0,200,83,0.7)','rgba(255,171,0,0.7)','rgba(170,0,255,0.7)','rgba(0,212,255,0.7)','rgba(255,23,68,0.7)'], borderRadius: 4 }]
+            }} height={200} />
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-card-title mb-4">Unsafe Act vs Condition vs Near Miss</div>
+          <div className="chart-container">
+            <ChartBar data={{
+              type: 'line', showLegend: true,
+              labels: MONTHLY_TREND.map(m => m.month),
+              datasets: [
+                { label: 'Unsafe Act', data: [7, 9, 10, 9, 11, 12, 13], borderColor: 'rgba(255,109,0,0.9)', backgroundColor: 'rgba(255,109,0,0.1)', fill: true, tension: 0.4 },
+                { label: 'Unsafe Condition', data: [8, 9, 11, 10, 12, 13, 14], borderColor: 'rgba(30,144,255,0.9)', backgroundColor: 'rgba(30,144,255,0.1)', fill: true, tension: 0.4 },
+                { label: 'Near Miss', data: [3, 3, 5, 5, 6, 6, 7], borderColor: 'rgba(255,23,68,0.9)', backgroundColor: 'rgba(255,23,68,0.1)', fill: true, tension: 0.4 }
+              ]
+            }} height={200} />
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-card-title mb-4">SIF Precursors by Category</div>
+          <div className="chart-container">
+            <ChartBar data={{
+              type: 'doughnut', showLegend: true,
+              labels: SIF_CATEGORIES.slice(0, 6).map(c => c.name),
+              datasets: [{ data: SIF_CATEGORIES.slice(0, 6).map(c => c.sif), backgroundColor: ['rgba(255,23,68,0.8)','rgba(255,109,0,0.8)','rgba(255,171,0,0.8)','rgba(30,144,255,0.8)','rgba(0,200,83,0.8)','rgba(170,0,255,0.8)'], borderColor: 'rgba(7,20,40,0.5)', borderWidth: 2 }]
+            }} height={200} />
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-card-title mb-4">Reports by Location</div>
+          <div className="chart-container">
+            <ChartBar data={{
+              labels: ['Drilling Platforms', 'Refinery Units', 'Pipeline Stations', 'Tank Farms', 'Wellsites', 'Offshore', 'Logistics'],
+              values: [62, 48, 39, 35, 43, 27, 31],
+              datasets: [{ data: [62, 48, 39, 35, 43, 27, 31], backgroundColor: 'rgba(0,212,255,0.65)', borderColor: 'rgba(0,212,255,1)', borderWidth: 1, borderRadius: 4 }]
+            }} height={200} />
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-card-title mb-4">Top Recurring Safety Indicators</div>
+          <div className="chart-container">
+            <ChartBar data={{
+              labels: SIF_CATEGORIES.slice(0, 8).map(c => c.name.split(' ').slice(0, 2).join(' ')),
+              values: SIF_CATEGORIES.slice(0, 8).map(c => c.reports),
+              datasets: [{ data: SIF_CATEGORIES.slice(0, 8).map(c => c.reports), backgroundColor: SIF_CATEGORIES.slice(0, 8).map((_, i) => `hsl(${200 + i*15}, 70%, ${50 + i*3}%)`), borderRadius: 4 }]
+            }} height={200} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SIF CATEGORIES PAGE
+// ═══════════════════════════════════════════════════════════════
+function SIFCategoriesPage() {
+  return (
+    <div className="page-content page-enter">
+      <div className="page-header">
+        <h1>SIF Precursor Categories</h1>
+        <p>Major Serious Injury &amp; Fatality precursor categories detected by the AI engine</p>
+      </div>
+      <div className="sif-categories-grid">
+        {SIF_CATEGORIES.map((cat, i) => (
+          <div className="sif-category-card" key={i}>
+            <div className="sif-category-icon" style={{background: cat.iconBg, color: cat.color}}>
+              <i className={`fas ${cat.icon}`}></i>
+            </div>
+            <div className="sif-category-name">{cat.name}</div>
+            <div className="sif-category-stats">
+              <span className="sif-cat-stat"><i className="fas fa-file" style={{marginRight:'3px', fontSize:'10px'}}></i>{cat.reports} Reports</span>
+              <span className="sif-cat-stat" style={{background:'rgba(255,109,0,0.08)', color:'var(--risk-high)', borderColor:'rgba(255,109,0,0.2)'}}>{cat.high} High Risk</span>
+              <span className="sif-cat-stat" style={{background:'rgba(255,23,68,0.08)', color:'var(--risk-critical)', borderColor:'rgba(255,23,68,0.2)'}}>{cat.sif} SIF</span>
+            </div>
+            <div className="sif-category-trend" style={{color: cat.trend.startsWith('+') ? 'var(--risk-high)' : cat.trend === '0' ? 'var(--text-muted)' : 'var(--risk-low)'}}>
+              <i className={`fas ${cat.trend.startsWith('+') ? 'fa-arrow-trend-up' : cat.trend === '0' ? 'fa-minus' : 'fa-arrow-trend-down'}`}></i>
+              <span style={{fontSize:'11px', marginLeft:'3px'}}>{cat.trend} this month</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RECOMMENDATIONS PAGE
+// ═══════════════════════════════════════════════════════════════
+function RecommendationsPage() {
+  const [activeTab, setActiveTab] = useState('all');
+  const tabs = [
+    { id: 'all', label: 'All' },
+    { id: 'pending', label: 'Pending' },
+    { id: 'in-progress', label: 'In Progress' },
+    { id: 'completed', label: 'Completed' },
+    { id: 'overdue', label: 'Overdue' }
+  ];
+
+  const filtered = activeTab === 'all' ? RECOMMENDATIONS_DATA : RECOMMENDATIONS_DATA.filter(r => r.status === activeTab);
+
+  const priorityColor = { critical: 'var(--risk-critical)', high: 'var(--risk-high)', medium: 'var(--risk-medium)', low: 'var(--risk-low)' };
+  const statusIcons = { pending: 'fa-clock', 'in-progress': 'fa-spinner', completed: 'fa-check-circle', overdue: 'fa-exclamation-circle' };
+  const statusColors = { pending: 'var(--risk-medium)', 'in-progress': 'var(--accent-primary)', completed: 'var(--risk-low)', overdue: 'var(--risk-critical)' };
+
+  return (
+    <div className="page-content page-enter">
+      <div className="page-header">
+        <h1>Safety Recommendations</h1>
+        <p>AI-generated corrective actions and preventive recommendations management</p>
+      </div>
+
+      <div style={{display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'12px', marginBottom:'24px'}}>
+        {[
+          { label: 'AI Generated', value: RECOMMENDATIONS_DATA.length, color: 'var(--accent-primary)', icon: 'fa-brain' },
+          { label: 'Pending', value: RECOMMENDATIONS_DATA.filter(r => r.status === 'pending').length, color: 'var(--risk-medium)', icon: 'fa-clock' },
+          { label: 'Completed', value: RECOMMENDATIONS_DATA.filter(r => r.status === 'completed').length, color: 'var(--risk-low)', icon: 'fa-check-circle' },
+          { label: 'Overdue', value: RECOMMENDATIONS_DATA.filter(r => r.status === 'overdue').length, color: 'var(--risk-critical)', icon: 'fa-exclamation-circle' }
+        ].map((s, i) => (
+          <div className="stat-card" key={i} style={{'--card-accent': s.color, '--icon-bg': `${s.color}20`, '--icon-color': s.color}}>
+            <div className="stat-card-header">
+              <div className="stat-card-label">{s.label}</div>
+              <div className="stat-card-icon"><i className={`fas ${s.icon}`}></i></div>
+            </div>
+            <div className="stat-card-value">{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="rec-management-tabs">
+        {tabs.map(t => (
+          <button key={t.id} className={`rec-tab ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>
+            {t.label} {t.id !== 'all' && `(${RECOMMENDATIONS_DATA.filter(r => t.id === 'all' || r.status === t.id).length})`}
+          </button>
+        ))}
+      </div>
+
+      {filtered.map(rec => (
+        <div className="rec-full-item" key={rec.id}>
+          <div className={`rec-priority-dot ${rec.priority}`} title={`${rec.priority} priority`}></div>
+          <div className="rec-full-content">
+            <div className="rec-full-text">{rec.text}</div>
+            <div className="rec-full-meta">
+              <span><i className="fas fa-file"></i> {rec.report}</span>
+              <span><i className="fas fa-tag"></i> {rec.category}</span>
+              <span><i className="fas fa-user"></i> {rec.assignedTo}</span>
+              <span><i className="fas fa-calendar"></i> Due: {rec.dueDate}</span>
+              <span style={{color: statusColors[rec.status]}}>
+                <i className={`fas ${statusIcons[rec.status]}`}></i> {rec.status.charAt(0).toUpperCase() + rec.status.slice(1).replace('-', ' ')}
+              </span>
+            </div>
+          </div>
+          <div className="rec-full-actions">
+            <button className="btn btn-primary btn-sm"><i className="fas fa-user-check"></i></button>
+            <button className="btn btn-outline btn-sm"><i className="fas fa-pen"></i></button>
+          </div>
+        </div>
+      ))}
+
+      {filtered.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-state-icon"><i className="fas fa-clipboard-check"></i></div>
+          <div className="empty-state-title">No recommendations in this category</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  REPORT DETAILS PAGE
+// ═══════════════════════════════════════════════════════════════
+function ReportDetailsPage({ report, setPage, prevPage, setSelectedReport }) {
+  const r = report || SAMPLE_REPORTS[0];
+  const [reviewDone, setReviewDone] = useState(r.reviewStatus === 'Reviewed');
+
+  return (
+    <div className="page-content page-enter">
+      <div className="page-header">
+        <div style={{display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap'}}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setPage(prevPage || 'reports')}>
+            <i className="fas fa-arrow-left"></i> Back
+          </button>
+          <h1>Report Details — {r.id}</h1>
+          <RiskBadge level={r.riskLevel} />
+          {r.sifDetected && <SifBadge detected={true} />}
+          {reviewDone && <span className="status-badge reviewed" style={{marginLeft:'4px'}}><i className="fas fa-check-circle"></i> Reviewed</span>}
+        </div>
+        <p>{r.date} • {r.time} • {r.type} • {r.department}</p>
+      </div>
+
+      <div style={{display:'grid', gridTemplateColumns:'1fr 340px', gap:'24px'}}>
+        <div>
+          <div className="detail-section">
+            <div className="detail-section-title"><i className="fas fa-info-circle" style={{color:'var(--accent-primary)'}}></i>Report Information</div>
+            <div className="detail-grid">
+              {[
+                ['Report ID', r.id], ['Report Type', r.type], ['Date', r.date], ['Time', r.time],
+                ['Location', r.location], ['Department', r.department], ['Equipment / Area', r.equipment], ['Reporter', r.reporter]
+              ].map(([label, val]) => (
+                <div className="detail-field" key={label}>
+                  <label>{label}</label>
+                  <p>{val || '—'}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="detail-section">
+            <div className="detail-section-title"><i className="fas fa-file-lines" style={{color:'var(--accent-primary)'}}></i>Incident Description</div>
+            <p style={{fontSize:'14px', lineHeight:'1.8', color:'var(--text-primary)'}}>{r.description}</p>
+          </div>
+
+          {r.immediateAction && (
+            <div className="detail-section">
+              <div className="detail-section-title"><i className="fas fa-bolt" style={{color:'var(--risk-medium)'}}></i>Immediate Action Taken</div>
+              <p style={{fontSize:'14px', color:'var(--text-secondary)'}}>{r.immediateAction}</p>
+            </div>
+          )}
+
+          <div className="detail-section">
+            <div className="detail-section-title"><i className="fas fa-brain" style={{color:'var(--accent-primary)'}}></i>AI Analysis Summary</div>
+            <div style={{display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'12px'}}>
+              <SifBadge detected={r.sifDetected} />
+              <RiskBadge level={r.riskLevel} />
+              <span style={{fontSize:'13px', fontWeight:700, color:'var(--accent-primary)'}}>
+                <i className="fas fa-brain" style={{marginRight:'5px'}}></i>{Math.round(r.confidence*100)}% Confidence
+              </span>
+            </div>
+            {r.indicators && (
+              <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
+                {r.indicators.map(ind => (
+                  <span key={ind} className="entity-tag" style={{background:'rgba(255,23,68,0.1)', borderColor:'rgba(255,23,68,0.25)', color:'var(--risk-critical)'}}>{ind}</span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="detail-section">
+            <div className="detail-section-title"><i className="fas fa-list-check" style={{color:'var(--risk-low)'}}></i>Recommended Actions</div>
+            {r.recommendations?.map((rec, i) => (
+              <div key={i} style={{display:'flex', gap:'10px', marginBottom:'10px', alignItems:'flex-start'}}>
+                <div style={{width:'22px', height:'22px', background:'var(--accent-primary)', color:'white', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:'700', flexShrink:0}}>{i+1}</div>
+                <span style={{fontSize:'13px', color:'var(--text-primary)'}}>{rec}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="detail-section">
+            <div className="detail-section-title"><i className="fas fa-gauge-high" style={{color:'var(--risk-high)'}}></i>Risk Score</div>
+            <div style={{textAlign:'center', padding:'16px 0'}}>
+              <div style={{fontSize:'48px', fontWeight:800, color:'var(--risk-high)'}}>{r.aiAnalysis?.score || 8.7}</div>
+              <div style={{fontSize:'12px', color:'var(--text-muted)'}}>/ 10 Risk Score</div>
+            </div>
+            <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
+              {Object.entries(r.aiAnalysis || {}).filter(([k]) => k !== 'score').map(([k, v]) => (
+                <div key={k} style={{display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'rgba(30,144,255,0.05)', border:'1px solid var(--border-color)', borderRadius:'8px'}}>
+                  <span style={{fontSize:'12px', color:'var(--text-secondary)', textTransform:'capitalize'}}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                  <span style={{fontSize:'12px', fontWeight:700, color: v === 'High' || v === 'Critical' ? 'var(--risk-high)' : v === 'Low' ? 'var(--risk-low)' : 'var(--risk-medium)'}}>{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="detail-section">
+            <div className="detail-section-title"><i className="fas fa-history" style={{color:'var(--accent-primary)'}}></i>Review History</div>
+            {r.reviewHistory?.map((h, i) => (
+              <div className="review-history-item" key={i}>
+                <div className="review-dot"></div>
+                <div className="review-content">
+                  <p>{h.action}</p>
+                  <span>{h.by} • {h.time}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{display:'flex', flexDirection:'column', gap:'10px', marginTop:'16px'}}>
+            <button className="btn btn-primary w-full" onClick={() => { setSelectedReport && setSelectedReport(r); setPage('analysis'); }}>
+              <i className="fas fa-brain"></i> Open AI Analysis
+            </button>
+            <button className="btn btn-outline w-full" onClick={() => {
+              const data = JSON.stringify(r, null, 2);
+              const blob = new Blob([data], {type:'application/json'});
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a'); a.href = url; a.download = `${r.id}-report.json`; a.click();
+              URL.revokeObjectURL(url);
+            }}>
+              <i className="fas fa-file-arrow-down"></i> Download Report (JSON)
+            </button>
+            <button
+              className={`btn w-full ${reviewDone ? 'btn-success' : 'btn-ghost'}`}
+              onClick={() => setReviewDone(v => !v)}>
+              <i className={`fas ${reviewDone ? 'fa-check-circle' : 'fa-check'}`}></i>
+              {reviewDone ? 'Marked as Reviewed ✓' : 'Mark as Reviewed'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SETTINGS PAGE
+// ═══════════════════════════════════════════════════════════════
+function SettingsPage() {
+  const [activeSection, setActiveSection] = useState('general');
+  const [settings, setSettings] = useState({
+    emailNotifications: true, smsAlerts: false, autoAnalysis: true,
+    highRiskAlerts: true, weeklyReport: true, darkMode: true,
+    confidenceThreshold: 75, riskAutoEscalate: true
+  });
+
+  const toggle = (key) => setSettings(s => ({...s, [key]: !s[key]}));
+
+  const sections = [
+    { id: 'general', label: 'General', icon: 'fa-gear' },
+    { id: 'notifications', label: 'Notifications', icon: 'fa-bell' },
+    { id: 'ai', label: 'AI Configuration', icon: 'fa-brain' },
+    { id: 'api', label: 'API Integration', icon: 'fa-plug' },
+    { id: 'users', label: 'Users & Access', icon: 'fa-users' }
+  ];
+
+  const ToggleRow = ({ label, desc, settingKey }) => (
+    <div className="settings-row">
+      <div className="settings-row-label"><h4>{label}</h4><p>{desc}</p></div>
+      <label className="toggle-switch">
+        <input type="checkbox" checked={settings[settingKey]} onChange={() => toggle(settingKey)} />
+        <div className="toggle-slider"></div>
+      </label>
+    </div>
+  );
+
+  return (
+    <div className="page-content page-enter">
+      <div className="page-header">
+        <h1>System Settings</h1>
+        <p>Configure the SIF Safety Intelligence System</p>
+      </div>
+      <div className="settings-grid">
+        <div className="settings-sidebar">
+          {sections.map(s => (
+            <div key={s.id} className={`settings-nav-item ${activeSection === s.id ? 'active' : ''}`} onClick={() => setActiveSection(s.id)}>
+              <i className={`fas ${s.icon}`}></i> {s.label}
+            </div>
+          ))}
+        </div>
+
+        <div className="settings-content">
+          {activeSection === 'general' && (
+            <>
+              <h3 style={{fontSize:'16px', fontWeight:700, marginBottom:'20px'}}>General Settings</h3>
+              <ToggleRow label="Dark Mode" desc="Use dark theme (recommended for industrial environments)" settingKey="darkMode" />
+              <ToggleRow label="Auto Analysis" desc="Automatically analyze reports when submitted" settingKey="autoAnalysis" />
+              <ToggleRow label="Risk Auto-Escalate" desc="Automatically escalate HIGH risk reports to HSE Manager" settingKey="riskAutoEscalate" />
+            </>
+          )}
+          {activeSection === 'notifications' && (
+            <>
+              <h3 style={{fontSize:'16px', fontWeight:700, marginBottom:'20px'}}>Notification Settings</h3>
+              <ToggleRow label="Email Notifications" desc="Receive safety alerts via email" settingKey="emailNotifications" />
+              <ToggleRow label="SMS Alerts" desc="Receive critical SIF alerts via SMS" settingKey="smsAlerts" />
+              <ToggleRow label="High Risk Alerts" desc="Immediate alerts for HIGH risk reports" settingKey="highRiskAlerts" />
+              <ToggleRow label="Weekly Report" desc="Receive weekly safety analytics digest" settingKey="weeklyReport" />
+            </>
+          )}
+          {activeSection === 'ai' && (
+            <>
+              <h3 style={{fontSize:'16px', fontWeight:700, marginBottom:'20px'}}>AI/NLP Configuration</h3>
+              <div className="settings-row">
+                <div className="settings-row-label">
+                  <h4>Confidence Threshold</h4>
+                  <p>Minimum AI confidence score to flag as SIF precursor</p>
+                </div>
+                <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+                  <input type="range" min={50} max={95} value={settings.confidenceThreshold}
+                    onChange={e => setSettings(s => ({...s, confidenceThreshold: +e.target.value}))}
+                    style={{accentColor: 'var(--accent-primary)', width:'120px'}} />
+                  <span style={{fontWeight:700, color:'var(--accent-primary)', minWidth:'36px'}}>{settings.confidenceThreshold}%</span>
+                </div>
+              </div>
+              <div className="settings-row">
+                <div className="settings-row-label"><h4>AI Model</h4><p>NLP model version for analysis</p></div>
+                <select className="select-filter">
+                  <option>SIF-NLP v2.1 (Default)</option>
+                  <option>SIF-NLP v2.0</option>
+                  <option>Custom Model (API)</option>
+                </select>
+              </div>
+            </>
+          )}
+          {activeSection === 'api' && (
+            <>
+              <h3 style={{fontSize:'16px', fontWeight:700, marginBottom:'20px'}}>API Integration</h3>
+              <div style={{background:'rgba(30,144,255,0.06)', border:'1px solid rgba(30,144,255,0.2)', borderRadius:'12px', padding:'20px', marginBottom:'20px'}}>
+                <div style={{fontSize:'13px', fontWeight:700, color:'var(--accent-primary)', marginBottom:'8px'}}><i className="fas fa-info-circle" style={{marginRight:'6px'}}></i>FastAPI Backend Integration</div>
+                <p style={{fontSize:'13px', color:'var(--text-secondary)', lineHeight:'1.7'}}>This prototype uses dummy AI data. Connect a real FastAPI backend at the endpoint below to enable live NLP analysis.</p>
+              </div>
+              {[['API Endpoint', 'http://localhost:8000/api'], ['Analyze Report', 'POST /api/analyze'], ['Get Reports', 'GET /api/reports'], ['Authentication', 'Bearer Token']].map(([label, val]) => (
+                <div className="settings-row" key={label}>
+                  <div className="settings-row-label"><h4>{label}</h4></div>
+                  <code style={{fontSize:'12px', color:'var(--accent-secondary)', fontFamily:'var(--font-mono)', background:'rgba(0,0,0,0.2)', padding:'4px 10px', borderRadius:'6px'}}>{val}</code>
+                </div>
+              ))}
+            </>
+          )}
+          {activeSection === 'users' && (
+            <>
+              <h3 style={{fontSize:'16px', fontWeight:700, marginBottom:'20px'}}>Users & Access Control</h3>
+              {[
+                { name: 'Rajesh Kumar', role: 'Senior Safety Officer', email: 'officer@oil.co.in', status: 'Active' },
+                { name: 'Priya Sharma', role: 'HSE Manager', email: 'hse@oil.co.in', status: 'Active' },
+                { name: 'Suresh Patel', role: 'Safety Inspector', email: 'inspector@oil.co.in', status: 'Active' }
+              ].map((u, i) => (
+                <div className="settings-row" key={i}>
+                  <div style={{display:'flex', gap:'12px', alignItems:'center'}}>
+                    <div style={{width:'36px', height:'36px', background:'linear-gradient(135deg, var(--navy-400), var(--accent-primary))', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:'700', color:'white'}}>{u.name[0]}</div>
+                    <div>
+                      <div style={{fontSize:'14px', fontWeight:600, color:'var(--text-primary)'}}>{u.name}</div>
+                      <div style={{fontSize:'12px', color:'var(--text-muted)'}}>{u.role} • {u.email}</div>
+                    </div>
+                  </div>
+                  <span className="status-badge reviewed">{u.status}</span>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MAIN APP
+// ═══════════════════════════════════════════════════════════════
+function App() {
+  const [user, setUser] = useState(null);
+  const [page, setPage] = useState('dashboard');
+  const [prevPage, setPrevPage] = useState('dashboard');
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogin = (userData) => { setUser(userData); setPage('dashboard'); };
+  const handleLogout = () => { setUser(null); setPage('dashboard'); };
+
+  // Smart navigation that tracks previous page for back buttons
+  const navigate = (newPage) => {
+    setPrevPage(page);
+    setPage(newPage);
+  };
+
+  // Navigate to report details from any page
+  const viewReport = (report, from) => {
+    setSelectedReport(report);
+    setPrevPage(from || page);
+    setPage('report-details');
+  };
+
+  // Navigate to analysis from any page
+  const analyzeReport = (report, from) => {
+    setSelectedReport(report);
+    setPrevPage(from || page);
+    setPage('analysis');
+  };
+
+  if (!user) return <LoginPage onLogin={handleLogin} />;
+
+  const renderPage = () => {
+    switch (page) {
+      case 'dashboard':
+        return <DashboardPage
+          setPage={navigate}
+          setSelectedReport={setSelectedReport}
+          viewReport={viewReport}
+          analyzeReport={analyzeReport}
+        />;
+      case 'submit':
+        return <SubmitReportPage
+          setPage={navigate}
+          setAnalysisResult={setAnalysisResult}
+          setSelectedReport={setSelectedReport}
+        />;
+      case 'reports':
+        return <ReportsPage
+          setPage={navigate}
+          setSelectedReport={setSelectedReport}
+          viewReport={viewReport}
+          analyzeReport={analyzeReport}
+        />;
+      case 'analysis':
+        return <AnalysisPage
+          report={selectedReport}
+          analysisResult={analysisResult}
+          setPage={navigate}
+          setSelectedReport={setSelectedReport}
+          prevPage={prevPage}
+          viewReport={viewReport}
+        />;
+      case 'risk-monitoring':
+        return <RiskMonitoringPage
+          setPage={navigate}
+          setSelectedReport={setSelectedReport}
+          viewReport={viewReport}
+          analyzeReport={analyzeReport}
+        />;
+      case 'analytics':       return <AnalyticsPage />;
+      case 'sif-categories':  return <SIFCategoriesPage />;
+      case 'recommendations': return <RecommendationsPage />;
+      case 'report-details':
+        return <ReportDetailsPage
+          report={selectedReport}
+          setPage={navigate}
+          prevPage={prevPage}
+          setSelectedReport={setSelectedReport}
+        />;
+      case 'settings':        return <SettingsPage />;
+      default:                return <DashboardPage setPage={navigate} setSelectedReport={setSelectedReport} viewReport={viewReport} analyzeReport={analyzeReport} />;
+    }
+  };
+
+  return (
+    <div className="app-shell">
+      <Sidebar activePage={page} setPage={navigate} user={user} onLogout={handleLogout}
+        isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="main-content">
+        <Navbar page={page} user={user} onMenuToggle={() => setSidebarOpen(s => !s)} />
+        {renderPage()}
+      </div>
+      <div className="sih-watermark">
+        <i className="fas fa-flask" style={{color:'var(--accent-primary)'}}></i>
+        <span>SIH 2026</span> • Team Visionaries (ID: 27) • Prototype
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MOUNT
+// ═══════════════════════════════════════════════════════════════
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
